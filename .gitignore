@@ -1,0 +1,14 @@
+# Compiled C binaries — extensionless, named after their .c source
+C/Binary_Search/Binary_Search
+C/Insertion_Sort/insert_sort
+
+# Build output
+*.o
+*.a
+*.so
+*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
