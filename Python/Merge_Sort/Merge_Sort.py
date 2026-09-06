@@ -17,7 +17,6 @@ def merge(left, right):
     result.extend(right[j:])
     return result
 
-print(merge([2, 4, 5], [1, 3, 6]))  # [1, 2, 3, 4, 5, 6] — two sorted halves interleaved into one
 
 def merge_sort(A):
     if len(A) <= 1:
@@ -35,4 +34,5 @@ print(merge_sort([1, 2, 3, 4, 5]))  # [1, 2, 3, 4, 5] — already sorted, comes 
 print(merge_sort([5, 4, 3, 2, 1]))  # [1, 2, 3, 4, 5] — reversed input, fully rebuilt in order
 print(merge_sort([3, 1, 3, 2, 3]))  # [1, 2, 3, 3, 3] — duplicates kept, none lost or merged
 print(merge_sort(A))  # [1, 2, 3, 4, 5, 6] — the sorted copy of A
+print(merge([2, 4, 5], [1, 3, 6]))  # [1, 2, 3, 4, 5, 6] — two sorted halves interleaved into one
 print(A)  # [5, 2, 4, 6, 1, 3] — A itself, still unsorted: merge_sort returns a new list
