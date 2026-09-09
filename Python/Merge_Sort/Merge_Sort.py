@@ -63,4 +63,3 @@ print(merge_sort([3, 1, 3, 2, 3]))  # [1, 2, 3, 3, 3] — duplicates all kept, n
 print(merge_sort(A))  # [1, 2, 3, 4, 5, 6] — the sorted copy of A
 print(merge([2, 4, 5], [1, 3, 6]))  # [1, 2, 3, 4, 5, 6] — two sorted halves interleaved into one
 print(A)  # [5, 2, 4, 6, 1, 3] — A itself, still unsorted: merge_sort returns a new list
-print(merge([2, 4, 5], [1, 3, 6]))  # [1, 2, 3, 4, 5, 6] — two sorted halves interleaved into one
