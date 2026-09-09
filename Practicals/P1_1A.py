@@ -69,18 +69,43 @@ given a specific timestamp, how many requests (k) have been sent by then?
 if i do something every 10 seconds (s(i)) and every time i do it i do 2 things(m(i)), at the end there are 20 things(k), how many seconds (t) passed? 100
 t = (k/m)*s
 
-but need to run it backwards, assuming k, and i cant rearrange the equation
+but need to run it backwards, assuming k
 k = (t/s)*m
 bingo
-
+actually k = (t//s)*m since there are no half fires. otherwise youd get stuff like firing 1.82 times
+i need to output the timestamp at which a certain k will happen
+total = m[0]*(t//s[0])  +  m[1]*(t//s[1])  +  m[2]*(t//s[2])  + ...
 
 
 """
-t = 0
+# t = 20
+
+def count(t):
+    total_requests = 0
+    for i in range(0, n):
+        total_requests += (t//s[i])*m[i]
+    return total_requests #the total number of requests sent from all sources by time t 
+
+# Nice, now it's only a matter of find the smallest t where this crossed k
+
+#=== binary search copied straight from my other project ===
+def binary_search():
+    low = 1
+    high = 2**63 - 1
+    while low != high:
+        mid = low + (high - low) // 2
+        if count(mid) >= k:
+            high = mid
+        else:
+            low = mid + 1
+    return low
+
 
 
 # === Debugging (DO NOT LEAVE IN THE HAND IN) ===
-print(k)
-print(n)
-print(m)
-print(s)
+print(binary_search())
+# print(k)
+# print(n)
+# print(m)
+# print(s)
+# print(count(t))
