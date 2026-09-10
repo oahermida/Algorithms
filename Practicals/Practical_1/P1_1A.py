@@ -49,8 +49,8 @@ What k is:
 it can be read as k requests have been sent in total. 
 
 run with:
-cd /home/oscar/Documents/Code/Algorithms/Practicals/
-python3 P1_1A.py < Sample.txt
+cd /home/oscar/Documents/Code/Algorithms/Practicals/Practical_1
+python3 P1_1A.py < 1A_Sample.txt
 """
 # === The input ===
 k = int(input())
@@ -69,12 +69,14 @@ given a specific timestamp, how many requests (k) have been sent by then?
 if i do something every 10 seconds (s(i)) and every time i do it i do 2 things(m(i)), at the end there are 20 things(k), how many seconds (t) passed? 100
 t = (k/m)*s
 
-but need to run it backwards, assuming k
+but need to run it backwards, assuming t
+The time given will be different in each machine, and computing all that would be hell
+but the k is consisntent throughout.
 k = (t/s)*m
 bingo
 actually k = (t//s)*m since there are no half fires. otherwise youd get stuff like firing 1.82 times
 i need to output the timestamp at which a certain k will happen
-total = m[0]*(t//s[0])  +  m[1]*(t//s[1])  +  m[2]*(t//s[2])  + ...
+total = m[0]*(t//s[0])  +  m[1]*(t//s[1])  +  m[2]*(t//s[2])etc
 
 
 """

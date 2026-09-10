@@ -12,6 +12,3 @@ C/Insertion_Sort/insert_sort
 __pycache__/
 *.pyc
 .venv/
-
-# Generated performance test input (make with Practicals/gen_big.py)
-Practicals/Big_uniform.txt
