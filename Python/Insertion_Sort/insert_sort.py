@@ -1,3 +1,7 @@
+"""
+Brocode explains: https://youtu.be/8mJ-OhcfpYg?si=wlil__dRIytyT5uO
+"""
+
 A = [5, 2, 4, 6, 1, 3]
 n = len(A)
 

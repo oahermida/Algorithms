@@ -1,3 +1,6 @@
+"""
+Brocode explains: https://youtu.be/3j0SWDX4AtU?si=uLBIFBiUdOCI4dem
+"""
 A = [5, 2, 4, 6, 1, 3]
 
 def merge(left, right):
