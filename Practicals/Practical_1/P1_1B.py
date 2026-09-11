@@ -59,8 +59,7 @@ A2_A = []
 A3_M = []
 # remember that: "the first grades in each array do not necessarily belong to the same student"
 
-nk = input().split()
-n = int(nk[0])
+
 
 # k is also gonna be tricky, floats are only exact up to 2^53 but k can go up to 2^58.
 # pythons ints have no limit so im fine here, C wont be.
@@ -77,7 +76,8 @@ n = int(nk[0])
 # ==========>       thats why k_scaled should be *100 and not *10 like the arrays.      <==========
 
 # Nothing gets divided for the comparison, only right at the end when i print the numbers back out as decimals.
-
+nk = input().split()
+n = int(nk[0])
 k = nk[1]
 k_scaled = round(float(nk[1]) * 100)   # x100
 
@@ -120,7 +120,7 @@ these arrays should be filled with sorted(A1_E) and sorted(A3_M).
 sorted(list) (native python)
 
 
-The plan, in order:
+The plan:
 
 1. Sort A1_E and A3_M once, before the loop starts.
         Sorting inside the loop would cost n log n per pass and would be game over.
@@ -132,7 +132,7 @@ The plan, in order:
 
 
 4. Two-pointer walk over side_E and side_M, against k_scaled. Two INDICES,
-   starting at OPPOSITE ends, each only ever moving one way:
+   starting at opposite ends, each only ever moving one way:
        E_low_index: starts at 0, the smallest side_E, and climbs
        M_high_index: starts at the end, the largest side_M, and descends
 
@@ -196,7 +196,7 @@ side_M = []
 
 #Comes out already sorted, yay
 #wait, i can create a list of lists
-#that might be to memory inneficient and a pain in the ass to port to C
+#that might be too memory inneficient and a pain in the ass to port to C
 #so i think this has to go inside the 2-Sum
 
 
@@ -228,6 +228,9 @@ def two_sum(target):
                 M_high_index -= 1
     return print("IMPOSSILE")
 
+"""
+if im not mistaken, this is a O(n^2)
+"""
 # ===Debugging===
 # print(n)
 # print(k)
