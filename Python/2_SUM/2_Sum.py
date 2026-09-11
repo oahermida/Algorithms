@@ -82,7 +82,7 @@ def brute_force(left_array, right_array, target):
 # neither turns around, so between them they take at most 2n steps before one
 # runs off its end.
 
-def two_pointers(left_array, right_array, target, show_steps=False):
+def two_pointers(left_array, right_array, target):
     left_sorted  = sorted(left_array)
     right_sorted = sorted(right_array)
 
@@ -94,48 +94,35 @@ def two_pointers(left_array, right_array, target, show_steps=False):
         right_value = right_sorted[right_high_index]
         pair_total  = left_value + right_value
 
-        if show_steps:
-            print(f"    left_low_index={left_low_index} right_high_index={right_high_index}   "
-                  f"{left_value:>2} + {right_value:>2} = {pair_total:>2}", end="   ")
-
         if pair_total == target:
-            if show_steps:
-                print("equal -> found it")
             return (left_value, right_value)
 
         if pair_total < target:
-            if show_steps:
-                print("too small -> left_low_index += 1")
             left_low_index += 1            # need a bigger left value
         else:
-            if show_steps:
-                print("too big   -> right_high_index -= 1")
             right_high_index -= 1           # need a smaller right value
 
     # One of the indices walked off its end, which means every pair has been
     # ruled out. No answer exists.
-    if show_steps:
-        print("    an index ran off the end -> no pair exists")
     return None
 
 
 # =====================================================================
-# 3. RUN BOTH AND SHOW THE WALK
+# 3. RUN BOTH
 # =====================================================================
 
 print(f"left_array  = {left_array}   -> sorted {sorted(left_array)}")
 print(f"right_array = {right_array}   -> sorted {sorted(right_array)}")
 print(f"target      = {target}\n")
 
-print("two-pointer walk:")
-found_pair = two_pointers(left_array, right_array, target, show_steps=True)
-print(f"\nresult: {found_pair if found_pair else 'no pair'}")
+found_pair = two_pointers(left_array, right_array, target)
+print(f"result: {found_pair if found_pair else 'no pair'}")
 print(f"brute force agrees: {brute_force(left_array, right_array, target) is not None} "
       f"(it found {brute_force(left_array, right_array, target)})")
 
-# A target that is impossible, so the "ran off the end" path gets shown too.
+# A target that is impossible, so the "ran off the end" path gets run too.
 print(f"\nsame arrays, target = 100:")
-impossible_result = two_pointers(left_array, right_array, 100, show_steps=True)
+impossible_result = two_pointers(left_array, right_array, 100)
 print(f"result: {impossible_result if impossible_result else 'no pair'}")
 
 
