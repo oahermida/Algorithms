@@ -90,7 +90,7 @@ def count(t):
 
 # Nice, now it's only a matter of find the smallest t where this crossed k
 
-#=== binary search copied straight from my other project ===
+#=== binary search ===
 def binary_search():
     low = 1
     high = 2**63 - 1
@@ -103,7 +103,9 @@ def binary_search():
     return low
 
 
-
+"""
+This is probably O(n log n)
+"""
 # === Debugging (DO NOT LEAVE IN THE HAND IN) ===
 print(binary_search())
 # print(k)
