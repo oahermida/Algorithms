@@ -97,39 +97,6 @@ for i in range (n):
     A3_M.append(round(float(StrA3_M[i]) * 10))
 
 
-# ================================ What I Have Now ================================
-# =================================================================================
-#
-# The statement calls E, A, M *and* k all "grades", which is why it reads so badly.
-# They are not the same kind of thing:
-#
-#     E, A, M   the ingredients -- one component grade taken from each array
-#     F         the result      -- what the formula computes out of them
-#     k         the target      -- read once from the input, never changes
-#
-#     E^2 + E*A + M^2 + M*A  =  F        and the question is: can F land on k?
-#
-# F is the runner, k is the finish line. They are equal only when the answer
-# is POSSIBLE. F changes with every combination I try; k never moves.
-#
-# -----------------------------------------------------------------------------------
-#  name       type        what it holds                    scale    on the sample
-# -----------------------------------------------------------------------------------
-#  n          int         grades per array. All three      --       4
-#                         arrays are this same length.
-#
-#  k          str         the target as the raw TEXT it    x1       "380.0"
-#                         was read as. For PRINTING only.  (text)
-#
-#  k_scaled   int         that same target as an exact     x100     38000
-#                         integer. For COMPARING only.
-#
-#  A1_E       list[int]   the candidate values for E       x10      [31, 49, 21, 100]
-#  A2_A       list[int]   the candidate values for A       x10      [10, 33, 90, 34]
-#  A3_M       list[int]   the candidate values for M       x10      [100, 93, 11, 80]
-# -----------------------------------------------------------------------------------
-
-# =================================================================================
 
 # ================================= The Algorithm =================================
 # =================================================================================
@@ -138,8 +105,8 @@ Input: gotten
 Goal:
     I need to know whether some E, A, M from three arrays satisfy E^2 + E*A + M^2 + M*A = k
 
-Looking at the formula, i can see that A is the one that multiplies the two other variables on that side of the equation
-Fix A and the formula falls apart into two independent halves: one holding only E, the other only M. A 2-SUM is needed
+Looking at the formula, A is the one that multiplies the two other variables on that side of the equation
+Fix A and the formula splits into two independent halves: one holding only E, the other only M. A 2-SUM is needed
 
 From now on variable names have to be descriptive or ill loose my shit
 E^2 + chosen_A * E      +       M^2 + chosen_A * M      = k
@@ -182,19 +149,91 @@ The plan, in order:
     !ATTENTION! format:
         1 - grades are x10 ints and must print with one decimal. Use:
             f"{value//10}.{value%10}"
-            value//10 is the whole part, value%10 is the tenths digit.
-            Chosen because it never creates a float
+            value//10 (whole part), value%10 (first digit after the ".").
+            Note: it never creates a float
 
         2 - k is the number after the "=" in the printed line. k_scaled is x100
             (not x10 like the grade arrays), so use:
             f"{k_scaled//100}.{(k_scaled//10)%10}"
          
-        3 - no spaces anywhere in the formula line.
-"""
- 
+        3 - REMEMBER: no spaces anywhere in the formula line.
 
+Run with:
+cd /home/oscar/Documents/Code/Algorithms/Practicals/Practical_1
+python3 P1_1B.py < 1B_Sample.txt
+"""
+# n (int) - grades per array. example: 4
+# k (str) - the target as the raw TEXT. For PRINTING only. Scale:   x1 example:    "380.0"
+# k_scaled (int) - that same target as an exact integer. For COMPARING only. Scale:    x100 example:    38000
+# A1_E (list[int]) - the possible values for E. Scale:  x10 example:     [31, 49, 21, 100]
+# A2_A (list[int]) - the possible values for A. Scale:  x10 example:     [10, 33, 90, 34]
+# A3_M (list[int]) - the possible values for M. Scale:  x10 example:     [100, 93, 11, 80]
+# E^2 + chosen_A * E      +       M^2 + chosen_A * M      = k
+#         E side                          M side
+
+# 1 -Sorting
+A1_E = sorted(A1_E)
+A3_M = sorted(A3_M)
+side_E = []
+side_M = []
+
+# 2/3 - Looping for Chose A
+# god knows how to do this in C
+# for i, chosen_A in enumerate(A2_A):
+#     side_E.append((A1_E[i]**2)+(chosen_A*A1_E[i]))
+#     side_M.append((A3_M[i]**2)+(chosen_A*A3_M[i]))
+
+# Problem: there should be an array for every possible A put in side_E and side_M
+# wait no, i dont have to, i can keep adding it to the same array and then determine to which A they belong based on n
+# before i fix this: every chosen_A currently being computed with just one E and one M. I have to make every chosen_A compute with every E and M
+
+# for i in range(len(A2_A)):
+#     chosen_A = A2_A[i]
+#     for E in A1_E:
+#         side_E.append((E**2)+(chosen_A*E))
+#     for M in A3_M:
+#         side_M.append((M**2)+(chosen_A*M))   
+
+#Comes out already sorted, yay
+#wait, i can create a list of lists
+#that might be to memory inneficient and a pain in the ass to port to C
+#so i think this has to go inside the 2-Sum
+
+
+# target is k_scaled
+def two_sum(target):
+    side_E = []
+    side_M = []
+    for i in range(len(A2_A)):
+        chosen_A = A2_A[i]
+        if len(side_E) == n: #or side_m
+            side_E = []
+            side_M = []
+        for E in A1_E:
+            side_E.append((E**2)+(chosen_A*E))
+        for M in A3_M:
+            side_M.append((M**2)+(chosen_A*M)) 
+        E_low_index = 0
+        M_high_index = n -1
+        while E_low_index < len(side_E) and M_high_index >= 0:
+            left_value = side_E[E_low_index]
+            right_value = side_M[M_high_index]
+            paired_total = left_value + right_value
+
+            if paired_total == target:
+                return (print(f"TEMPORARY FORMAT: POSSIBLE E:{left_value}, M: {right_value}, A:{chosen_A}"))
+            if paired_total < target:
+                E_low_index += 1
+            else:
+                M_high_index -= 1
+    return print("IMPOSSILE")
+
+# ===Debugging===
 # print(n)
 # print(k)
 # print(A1_E)
 # print(A2_A)
 # print(A3_M)
+# print(side_E)
+# print(side_M)
+two_sum(k_scaled)
