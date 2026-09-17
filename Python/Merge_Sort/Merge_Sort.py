@@ -2,6 +2,15 @@
 Brocode explains: https://youtu.be/3j0SWDX4AtU?si=uLBIFBiUdOCI4dem
 """
 A = [5, 2, 4, 6, 1, 3]
+def merge_sort(A):
+    if len(A) <= 1:
+        return A
+
+    mid = len(A) // 2
+    left = merge_sort(A[:mid])
+    right = merge_sort(A[mid:])
+
+    return merge(left, right)
 
 def merge(left, right):
     result = []
@@ -21,15 +30,7 @@ def merge(left, right):
     return result
 
 
-def merge_sort(A):
-    if len(A) <= 1:
-        return A
 
-    mid = len(A) // 2
-    left = merge_sort(A[:mid])
-    right = merge_sort(A[mid:])
-
-    return merge(left, right)
 
 # === How it Runs ===
 # --- merge_sort ---
