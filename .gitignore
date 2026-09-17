@@ -12,3 +12,6 @@ C/Insertion_Sort/insert_sort
 __pycache__/
 *.pyc
 .venv/
+
+# Editor scratch (VS Code Code Runner)
+tempCodeRunnerFile.py
