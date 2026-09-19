@@ -101,6 +101,116 @@ def find_pair_with_sum(sorted_values, target):
     return None
 
 
+# ============================================================================
+# PATTERN 4 — TWO POINTERS, two sorted VIEWS of the same data (a sweep line)
+# ============================================================================
+#
+# Patterns 2 and 3 walk lists that hold different things. This one walks the
+# SAME list twice: once sorted by when each interval opens, once sorted by when
+# each interval closes. Walking those two orders side by side replays every
+# open-event and close-event in chronological order, which is what lets a
+# running count of "how many are open right now" be kept in a single pass.
+#
+# Came from Practical 2 / Themis 2B: n bus licenses, each valid over a date
+# range, find the day on which the most licenses are simultaneously valid.
+# There it was called double_pointer(left, right).
+
+# A license is a 3-field list. These constants name the fields, so that nothing
+# below ever reads a bare row[0] / row[1] / row[2] and leaves you guessing.
+DATE_LICENSE_STARTS = 0      # first day the license is valid,          as yyyymmdd
+DATE_LICENSE_EXPIRES = 1     # first day it is NO LONGER valid,         as yyyymmdd
+NAME_OF_COMPANY = 2          # unused here, listed so the layout is complete
+
+# Why yyyymmdd integers: written in that order, a plain integer comparison IS a
+# chronological comparison (20250105 < 20250107), so leap years, month lengths
+# and date parsing never enter into it.
+#
+# Why EXPIRES is exclusive: a license valid up to but not including its expiry
+# date means two licenses overlap exactly when
+#     start_of_A < expiry_of_B  and  start_of_B < expiry_of_A
+# which is why the comparison below is a strict "<" and not "<=". A license
+# expiring on the same morning another one starts does not count as an overlap.
+
+
+def busiest_day(licenses_sorted_by_start, licenses_sorted_by_expiry):
+    """How many licenses are valid at once on the busiest day, and which day that is.
+
+    Both arguments are the same list of licenses, sorted two different ways:
+        licenses_sorted_by_start   ascending by DATE_LICENSE_STARTS
+        licenses_sorted_by_expiry  ascending by DATE_LICENSE_EXPIRES
+
+    Returns (most_licenses_valid_at_once, date_of_busiest_day). If several days
+    tie, the earliest one is returned, because a later tie is not strictly
+    greater than the best seen so far.
+    """
+    # The variables
+    #   index_of_next_license_to_start   position in the by-start view: the next
+    #                                    license whose start-event has not been played
+    #   index_of_next_license_to_expire  position in the by-expiry view: the next
+    #                                    license whose expiry-event has not been played
+    #   licenses_valid_right_now         running count of open licenses at the
+    #                                    moment the sweep has reached
+    #   most_licenses_valid_at_once      the largest value that count has ever held
+    #   date_of_busiest_day              the date on which it held that value
+    index_of_next_license_to_start = 0
+    index_of_next_license_to_expire = 0
+    licenses_valid_right_now = 0
+    most_licenses_valid_at_once = 0
+    date_of_busiest_day = 0          # stays 0 when the input is empty
+
+    while (index_of_next_license_to_start < len(licenses_sorted_by_start)
+           and index_of_next_license_to_expire < len(licenses_sorted_by_expiry)):
+
+        # The two licenses currently under the pointers. Pulling them out as
+        # named rows is what removes the [ ][ ] double-subscript from the test.
+        next_license_to_start = licenses_sorted_by_start[index_of_next_license_to_start]
+        next_license_to_expire = licenses_sorted_by_expiry[index_of_next_license_to_expire]
+
+        # The only two dates the comparison actually cares about.
+        date_next_license_starts = next_license_to_start[DATE_LICENSE_STARTS]
+        date_next_license_expires = next_license_to_expire[DATE_LICENSE_EXPIRES]
+
+        if date_next_license_starts < date_next_license_expires:
+            # The next event in time is an OPENING: one more license goes valid
+            # before anything currently valid runs out.
+            licenses_valid_right_now += 1
+
+            # A record can only ever be set on an opening, never on a closing,
+            # so this check lives in this branch alone.
+            if licenses_valid_right_now > most_licenses_valid_at_once:
+                most_licenses_valid_at_once = licenses_valid_right_now
+                date_of_busiest_day = date_next_license_starts
+
+            index_of_next_license_to_start += 1
+        else:
+            # The next event in time is a CLOSING: a license expires before (or
+            # on the same day as) the next one starts, so the count drops.
+            licenses_valid_right_now -= 1
+            index_of_next_license_to_expire += 1
+
+    # The loop ends as soon as the by-start view is exhausted. Everything left
+    # in the by-expiry view is a closing, and closings only ever lower the
+    # count, so no record can be hiding in the tail - nothing is missed.
+    return most_licenses_valid_at_once, date_of_busiest_day
+
+
+def licenses_valid_on(licenses, date):
+    """Every company whose license covers `date`, sorted by name.
+
+    The companion step to busiest_day: that returns the day, this says who was
+    on the road that day. Expiry is exclusive, hence <= start and > expiry.
+    """
+    names_of_companies_valid_on_that_day = []
+
+    for license_record in licenses:
+        starts_on_or_before_date = license_record[DATE_LICENSE_STARTS] <= date
+        expires_after_date = license_record[DATE_LICENSE_EXPIRES] > date
+        if starts_on_or_before_date and expires_after_date:
+            names_of_companies_valid_on_that_day.append(license_record[NAME_OF_COMPANY])
+
+    return sorted(names_of_companies_valid_on_that_day)
+
+
 # === How it Runs ===
 # --- count_below (one pointer) ---
 # the for loop walks the queries; value_cursor walks the values and NEVER resets between queries
@@ -140,6 +250,29 @@ def find_pair_with_sum(sorted_values, target):
 #   low 1 (3)  + high 4 (8)  = 11 > 10 -> high 3
 #   low 1 (3)  + high 3 (6)  =  9 < 10 -> low  2
 #   low 2 (4)  + high 3 (6)  = 10 == 10 -> return (2, 3)
+#
+# --- busiest_day (two pointers, two sorted views of one list) ---
+# the same licenses are sorted twice: by start date, and by expiry date
+# the by-start pointer plays every "a license opens" event, the by-expiry pointer every "one closes"
+# whichever of the two dates under the pointers is EARLIER is the next thing to happen in time,
+#   so each turn compares those two dates and advances only the side that just fired
+# opening -> count up and maybe a new record; closing -> count down, never a record
+# the loop stops when the by-start side runs out, because only openings can set a record
+#
+# trace on the four licenses of Themis 2B, as yyyymmdd:
+#   by start : Hector 20241221 | SuperBus 20250101 | UltraBus++ 20250103 | Buzzzer 20250105
+#   by expiry: Hector 20250102 | UltraBus++ 20250107 | Buzzzer 20250109 | SuperBus 20250110
+#
+#   starts 20241221 < expires 20250102 -> open,  count 1, RECORD 1 on 20241221, start_idx 1
+#   starts 20250101 < expires 20250102 -> open,  count 2, RECORD 2 on 20250101, start_idx 2
+#   starts 20250103 < expires 20250102 -> false: close, count 1,                expiry_idx 1
+#   starts 20250103 < expires 20250107 -> open,  count 2, not > 2, no record,    start_idx 3
+#   starts 20250105 < expires 20250107 -> open,  count 3, RECORD 3 on 20250105,  start_idx 4
+#   start_idx 4 == len, loop ends -> returns (3, 20250105) = 05.01.2025, three buses
+#
+#   note the third line: 20250103 is NOT < 20250102, so the expiry wins the tie of "what
+#   happens next" and Hector's license is retired before UltraBus++ is counted. Get that
+#   comparison backwards and the count drifts upward and never comes back down.
 
 
 print(count_below([10, 20, 30, 40], [15, 25, 100]))  # [1, 2, 4] — cursor ends at 4, having moved forward only
@@ -156,3 +289,23 @@ print(find_pair_with_sum([1, 3, 4, 6, 8, 11], 10))  # (2, 3) — 4 + 6
 print(find_pair_with_sum([1, 3, 4, 6, 8, 11], 12))  # (0, 5) — 1 + 11, found on the first step
 print(find_pair_with_sum([1, 3, 4, 6, 8, 11], 100))  # None — pointers meet without a hit
 print(find_pair_with_sum([5], 10))  # None — one element, low_index < high_index is false immediately
+
+# the Themis 2B example, dates already turned into yyyymmdd integers
+example_licenses = [
+    [20250101, 20250110, "SuperBus"],
+    [20250103, 20250107, "UltraBus++"],
+    [20250105, 20250109, "Buzzzer"],
+    [20241221, 20250102, "Hector's bus company"],
+]
+example_by_start = sorted(example_licenses, key=lambda row: row[DATE_LICENSE_STARTS])
+example_by_expiry = sorted(example_licenses, key=lambda row: row[DATE_LICENSE_EXPIRES])
+
+print(busiest_day(example_by_start, example_by_expiry))  # (3, 20250105) — the worked trace above
+print(licenses_valid_on(example_licenses, 20250105))  # ['Buzzzer', 'SuperBus', 'UltraBus++'] — the three, by name
+print(busiest_day([], []))  # (0, 0) — no licenses, the bounds guard stops the while immediately
+print(busiest_day([[20250101, 20250102, "Solo"]], [[20250101, 20250102, "Solo"]]))  # (1, 20250101) — one license is its own busiest day
+
+# back-to-back licenses: one expires the morning the next starts, so they never overlap
+touching = [[20250101, 20250105, "Early"], [20250105, 20250110, "Late"]]
+print(busiest_day(sorted(touching, key=lambda row: row[DATE_LICENSE_STARTS]),
+                  sorted(touching, key=lambda row: row[DATE_LICENSE_EXPIRES])))  # (1, 20250101) — exclusive expiry, no overlap
