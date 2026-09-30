@@ -63,7 +63,7 @@ each by walking outward from the centre -- the slide spells the sums out:
 
     T(n) <= 2T(n/2) + O(n)      ->      O(n log n)      [slide 19]
 
-which is merge sort's recurrence exactly -- see ../Merge_Sort/Merge_Sort.py.
+which is merge sort's recurrence exactly -- see ../../Sorting/Merge_Sort/Merge_Sort.py.
 Same shape, same master-theorem case, for the same reason: two halves plus a
 linear combining step.
 
@@ -74,7 +74,7 @@ Flagged clearly because it is NOT what Lecture 2 asks for: the examinable
 solution is the divide-and-conquer one above. But the same problem has a linear
 DP solution, and seeing why is worth more than the algorithm itself.
 
-Use the arrival-based framing from ../Bunny_DP/Bunny_DP.py -- stand at position
+Use the arrival-based framing from ../../Dynamic_Programming/Bunny_DP/Bunny_DP.py -- stand at position
 i and ask "what is the best subarray ENDING exactly here?" There are only two
 answers:
 

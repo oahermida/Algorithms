@@ -92,7 +92,7 @@ with several extra additions and subtractions. Additions are O(n); it is the
 multiplications that recurse, so trading additions for a multiplication is
 always a good deal at scale.
 
-    master theorem, comparing the two:        [see ../Merge_Sort/, Lecture 2]
+    master theorem, comparing the two:        [see ../../Sorting/Merge_Sort/, Lecture 2]
         4T(n/2) + O(n)   ->   n^(log2 4) = n^2
         3T(n/2) + O(n)   ->   n^(log2 3) = n^1.585
         2T(n/2) + O(n)   ->   n^(log2 2) log n = n log n   (merge sort)

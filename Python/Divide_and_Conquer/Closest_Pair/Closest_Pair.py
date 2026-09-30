@@ -81,7 +81,7 @@ the real question easy. The array is not wanted in order for its own sake; it is
 wanted in order so that "closest" becomes "adjacent", which turns a quadratic
 search into a linear scan.
 
-The same lecture makes the same point with 2-SUM (see ../2_SUM/2_Sum.py), where
+The same lecture makes the same point with 2-SUM (see ../../Array_Techniques/2_SUM/2_Sum.py), where
 sorting turns "find a pair summing to the target" into a single two-pointer
 walk. Two different problems, one technique: pay O(n log n) once to buy
 structure, then exploit the structure in O(n).
