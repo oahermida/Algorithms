@@ -42,12 +42,12 @@ print(best_combo)
 """
 
 # #==== COMMENT B4 SUBMISSION =====
-import sys
-import os
+# import sys
+# import os
 
-if sys.stdin.isatty():
-    here = os.path.dirname(os.path.abspath(__file__))
-    sys.stdin = open(os.path.join(here, "5A_Sample.txt"))
+# if sys.stdin.isatty():
+#     here = os.path.dirname(os.path.abspath(__file__))
+#     sys.stdin = open(os.path.join(here, "5A_Sample.txt"))
 
 # #====================================
 
@@ -59,7 +59,7 @@ for i in range(n):
     for j in range(len(row)):
         row[j] = int(row[j])
     mining_field.append(row)    
-print(f"mining_field = {mining_field}")
+# print(f"mining_field = {mining_field}")
 
 #for three columns a row can take the following valid shapes:
 #none        [ ][ ][ ]
