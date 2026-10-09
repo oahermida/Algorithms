@@ -1,109 +1,12 @@
 r"""
 BINARY SEARCH TREE
-==================
+Lecture 8, slides 3-13; CLRS 3rd ed., chapter 12 (pp. 288-299).
 
-Advanced Algorithms, Lecture 8 (Ivan Bliznets), slides 3-13. The bibliography
-(slide 34) points to CLRS chapter 12, which is where the transplant-style delete
-in section 6 comes from (CLRS 3rd ed., section 12.3, TRANSPLANT p. 296,
-TREE-DELETE p. 298).
+Notes: [[BST — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/BST — Code Notes.md
 
-The simpler file ../../Data_Structures/10_Binary_Tree.py has insert, in-order
-and height only. This file is the full set of operations the lecture lists.
-
-
-THE OPERATIONS [slide 3]
-------------------------
-    Binary Search Trees support the following basic operations:
-      - Search
-      - Min/Max
-      - Find next (predecessor)
-      - Find previous (successor)
-      - Insert
-      - Delete
-    Running time O(h), h - height of the tree.
-    The height of the tree in the worst case can be linear.
-    However, AVL and red-black trees have O(log n) height.
-
-Note: slide 3 swaps the two names. "Next" is the SUCCESSOR (the next bigger key)
-and "previous" is the PREDECESSOR. This file uses the standard meaning.
-
-
-THE ORDER RULE [slides 4-5]
----------------------------
-    "left child" < "parent" < "right child"
-    generally NOT a complete binary tree
-    only unique values (this course)
-
-So inserting a key that is already there does nothing (section 2).
-
-The rule is about whole subtrees, not just children: every key in the left
-subtree is smaller, every key in the right subtree is bigger. Section 8 checks
-exactly that.
-
-
-SEARCH AND INSERT [slides 7-9]
-------------------------------
-    algorithm SearchInSearchTree(T, n)               [slide 7]
-        if T empty then return not found
-        r <- the root of T,  x <- the value in r
-        if n = x then return r
-        if n < x then return SearchInSearchTree(left subtree of T, n)
-        else return SearchInSearchTree(right subtree of T, n)
-
-Slide 9 gives insert as recursive C code: walk down like a search, and when you
-fall off the tree, put the new node there. Equal keys fall through both
-branches, so they are ignored. Sections 2-3 do both walks with a loop instead of
-recursion (CLRS's TREE-SEARCH and TREE-INSERT); the path taken is the same.
-
-
-SUCCESSOR [slide 10]
---------------------
-    algorithm InOrderSuccessor(T, v)
-        input : search tree T with node v having two children
-        u <- the right child of v
-        w <- the lowest left descendant of u
-        return w
-
-The slide only needs the two-children case, because that is the only case
-delete uses. Section 4 also handles "no right child" (CLRS TREE-SUCCESSOR,
-p. 292): then the successor is the first ancestor you reach by stepping up
-from a LEFT child.
-
-
-DELETE [slides 11-13]
----------------------
-    algorithm RemoveFromSearchTree(T, n)
-        if there is no node with value n in T then return T
-        v <- the node in T with value n
-        if v is a leaf then
-            return T with v removed
-        else if v has 1 child then
-            return T with v replaced by the child of v
-        else /* the difficult case: v has two children */
-            w <- InOrderSuccessor(T, v)
-            (value of v) <- (value of w)
-            /* now we use that w has no left child */
-            if w has a right child then
-                return T with w replaced by its right child
-            else /* w has no children, so it is a leaf */
-                return T with w removed
-
-    Example [slide 13]: "removed former root node 12, replaced it with its
-    inorder successor 15".
-
-LECTURE vs CLRS. The lecture COPIES the successor's value into v and then
-removes the successor's node. CLRS 3rd edition does not copy: it MOVES the
-successor node itself into v's place with TRANSPLANT. Both give the same keys in
-the same shape. The difference shows when other code holds a pointer to a node:
-with copying, the node that "was 15" now holds 12's place and the old 15 node is
-gone. CLRS p. 299 explains it chose moving for that reason.
-
-This file has both: section 6 is the CLRS version, section 7 the slide version.
-The tests run both and check they produce the same tree.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. TreeNode, with a parent pointer (CLRS style)
     2. insert                   [slides 8-9, CLRS p. 294]
     3. search                   [slide 7, CLRS p. 290]
@@ -125,13 +28,7 @@ import random
 # =====================================================================
 # 1. THE NODE
 # =====================================================================
-# key: the value stored here
-# left / right: the two children, or None
-# parent: the node above, or None for the root
-#
-# The parent pointer is what lets successor walk UP and lets delete re-hang a
-# subtree under the right node. 10_Binary_Tree.py has no parent pointer because
-# it never needs to go up.
+# Notes: [[BST — Code Notes#1. The node]] (variables, why a parent pointer)
 
 class TreeNode:
     def __init__(self, key):
@@ -149,14 +46,7 @@ class BinarySearchTree:
 # =====================================================================
 # 2. INSERT [slides 8-9, CLRS 12.3 p. 294]
 # =====================================================================
-# current: the node the walk is standing on
-# trailing: the node one step behind; it becomes the new node's parent
-#
-# Walk down as in search. When current falls off the tree, trailing is the last
-# real node, and the new node hangs under it on the correct side.
-# A key that is already present is ignored (slide 5: unique values).
-#
-# O(h).
+# Notes: [[BST — Code Notes#2. Insert]] (variables, how the walk works)
 
 def insert(tree, key):
     trailing = None
@@ -204,18 +94,7 @@ def search(tree, key):
 # =====================================================================
 # 4. MINIMUM AND SUCCESSOR [slide 10, CLRS 12.2 pp. 291-292]
 # =====================================================================
-# node: where the walk starts
-# ancestor: the node above, while climbing
-#
-# minimum: keep going left. The leftmost node has the smallest key.
-#
-# successor, two cases:
-#   right subtree exists -> the minimum of the right subtree  (slide 10)
-#   no right subtree     -> climb while we are a RIGHT child; the first time we
-#                           step up from a LEFT child, that parent is next.
-#                           If we reach the root first, there is no successor.
-#
-# O(h) each.
+# Notes: [[BST — Code Notes#4. Minimum and successor]] (variables, the two successor cases)
 
 def minimum(node):
     while node.left is not None:
@@ -250,24 +129,7 @@ def in_order(node, visited):
 # =====================================================================
 # 6. DELETE, CLRS TRANSPLANT STYLE [CLRS 12.3 pp. 296-298]
 # =====================================================================
-# transplant(tree, old_subtree, new_subtree):
-#   hang new_subtree where old_subtree used to hang. Only the link from above
-#   changes; old_subtree's own children are not touched.
-#
-# delete_node:
-#   doomed: the node being removed (CLRS calls it z)
-#   heir: its successor, used only in the two-children case (CLRS calls it y)
-#
-#   no left child   -> replace doomed by its right child (covers the leaf case,
-#                      since that right child may be None)
-#   no right child  -> replace doomed by its left child
-#   two children    -> heir = minimum of the right subtree; heir has no left child.
-#                      If heir is deeper than doomed's right child, first lift
-#                      heir's right child into heir's place and give heir
-#                      doomed's right subtree. Then put heir where doomed was
-#                      and give it doomed's left subtree.
-#
-# O(h): the only walk is minimum().
+# Notes: [[BST — Code Notes#6. Delete, CLRS transplant style]] (transplant, variables, the three cases)
 
 def transplant(tree, old_subtree, new_subtree):
     if old_subtree.parent is None:
@@ -327,17 +189,7 @@ def delete_by_copy(tree, key):
 # =====================================================================
 # 8. CHECKS
 # =====================================================================
-# is_bst: every key lies strictly between the bounds handed down from above.
-#   lower / upper: the open interval this subtree's keys must fall in
-#   Checking only "left child < parent" is not enough; a key deep in the left
-#   subtree can still be bigger than the root.
-#
-# parents_consistent: every child's parent pointer points back at it.
-#
-# height: longest path in EDGES from node to a leaf, as slide 15 defines it.
-#   A leaf has height 0. The slide calls the empty tree's height undefined; -1
-#   is used here so that "1 + max of the children" works for every node.
-#   (10_Binary_Tree.py counts nodes instead, so a leaf is 1 there.)
+# Notes: [[BST — Code Notes#8. Checks]] (is_bst, parents_consistent, height)
 
 def is_bst(node, lower=None, upper=None):
     if node is None:
@@ -367,13 +219,7 @@ def height(node):
 # =====================================================================
 # 9. TOP-DOWN ASCII PRINTER
 # =====================================================================
-# build_lines returns, for one subtree:
-#   lines: the picture, one string per row, all the same width
-#   width: that width
-#   middle: the column where this subtree's root label sits
-#
-# Each node is drawn with its children's pictures side by side underneath,
-# joined by "_" runs and "/" "\" strokes.
+# Notes: [[BST — Code Notes#9. Top-down ASCII printer]] (what build_lines returns)
 
 def build_lines(node):
     if node is None:

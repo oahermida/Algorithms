@@ -1,95 +1,12 @@
 r"""
 TREAP
-=====
+Lecture 8, slides 30-33; Erickson, "Treaps and Skip Lists" 3.1; CLRS 3rd ed., Problem 13-4.
 
-Advanced Algorithms, Lecture 8 (Ivan Bliznets), slides 30-33. The slides follow
-Erickson's lecture notes "Treaps and Skip Lists", section 3.1 (the example on
-slide 30 is his figure). CLRS has treaps as Problem 13-4 (3rd ed. pp. 333-335),
-with the same min-heap convention.
+Notes: [[Treap — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Treap — Code Notes.md
 
-Uses the rotations from ../Rotations/Rotations.py.
-
-
-THE DEFINITION [slide 30]
--------------------------
-    Treap (Tree + heap) - a randomized binary tree in which every node has both
-    a search key and a priority
-      - It is a binary tree for search keys (alphabetic order on letters)
-      - It is a min-heap for priorities (numbers)
-
-              ____M1_____
-             /           \
-            H2_         T3
-           /   \       /
-          G7  I4_     R5
-         /       \   /
-        A9      L8  O6
-
-So the SMALLEST priority is at the root, and every node's priority is smaller
-than its children's. Erickson's footnote admits the wording is awkward: "first
-priority" wins, so smaller numbers sit higher.
-
-Erickson also shows: with distinct keys and priorities, the treap is UNIQUE.
-The smallest priority must be the root (heap), every smaller key goes left and
-every bigger key goes right (search tree), and the same holds in each subtree.
-Equivalently, the treap is the plain BST you get by inserting the keys in order
-of increasing priority. Section 6 checks this by inserting slide 30's nodes in
-many different orders and always getting the same tree.
-
-WHY RANDOM PRIORITIES. The shape is the plain BST for "keys inserted in
-priority order". If the priorities are random, that order is a random
-permutation of the keys, whatever order the USER inserted them in. So even
-sorted input, the plain BST's worst case, produces a random-looking tree.
-
-
-INSERT [slide 31]
------------------
-    - Insert using binary search tree algorithm
-    - Generate a random priority
-    - Perform rotations to bubble up the node based on priority
-        - If node is a left child, rotate right about parent
-        - If node is a right child, rotate left about the parent
-        - Stop when parent priority < node priority or node is root
-
-This is a heap's upheap (../../Data_Structures/08_Heap.py), done with rotations
-instead of swaps. A swap would break the search-tree order; a rotation keeps it
-(Rotations.py, slide 19).
-
-
-DELETE [slide 32]
------------------
-    There are three cases:
-      - Node is a leaf, just remove it
-      - Node has a single child, remove node and replace with child
-      - Node has 2 children. Rotate the node down, always choosing rotation
-        with the child that has the smallest priority. Continue as long as node
-        has two children.
-
-Why the child with the SMALLER priority: that child is about to become the
-parent of the other one. If the larger one came up instead, it would sit above
-a smaller priority and break the heap.
-
-SLIDES vs ERICKSON. Erickson rotates the node down until it is a LEAF, then
-cuts it off ("run the insertion algorithm backward in time"). The slide stops
-as soon as the node has at most one child and splices it out, which saves the
-last few rotations. Same final tree either way: once the node has one child,
-rotating it further down just carries that child up, which is what splicing
-does in one step.
-
-
-RUNNING TIME [slide 33]
------------------------
-    Theorem. Average depth of Treap is O(log n).
-    We do not discuss the proof in this course.
-
-Search, insert and delete are all O(depth), so expected O(log n). The worst
-case is still O(n) if the random priorities happen to come out sorted, but that
-has negligible probability and does not depend on the input. Section 6 measures
-the average depth on sorted input.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. TreapNode: key and priority
     2. rotations                         [slide 31, Rotations.py]
     3. search                            [slide 7: unchanged from BST]
@@ -162,16 +79,7 @@ def search(node, key):
 # =====================================================================
 # 4. INSERT [slide 31]
 # =====================================================================
-# node: the root of the subtree the key goes into
-# priority: the new node's priority; random unless a test passes one in
-#
-# Going down: plain BST insert, the new node becomes a leaf.
-# Coming back up: at each node on the path, if the child we just came from now
-# has a SMALLER priority than this node, rotate it up. Once a parent with a
-# smaller priority is reached, nothing changes from there up: "stop when parent
-# priority < node priority".
-#
-# Expected O(log n).
+# Notes: [[Treap — Code Notes#4. Insert]] (variables, going down and coming back up)
 
 def insert(node, key, priority=None):
     if node is None:
@@ -192,17 +100,7 @@ def insert(node, key, priority=None):
 # =====================================================================
 # 5. DELETE [slide 32]
 # =====================================================================
-# node: the root of the subtree the key is deleted from
-# new_top: the child that is rotated up above the doomed node
-#
-# Find the node as in search. Then:
-#   leaf          -> return None (it is removed)
-#   one child     -> return that child (it takes the node's place)
-#   two children  -> rotate up the child with the smaller priority, so the
-#                    doomed node sinks one level, then keep deleting from the
-#                    side it sank into
-#
-# Expected O(log n).
+# Notes: [[Treap — Code Notes#5. Delete]] (variables, the three cases)
 
 def delete(node, key):
     if node is None:

@@ -1,74 +1,12 @@
 """
 SELECTION SORT
-==============
+Lecture 2 (Ivan Bliznets), slides 3-7; CLRS 3rd ed., exercise 2.2-2 (p. 29).
 
-Advanced Algorithms, Lecture 2 (Ivan Bliznets), slides 3-7. Also CLRS (3rd
-ed.) exercise 2.2-2, p. 29 -- CLRS only sets it as an exercise.
+Notes: [[Selection Sort — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Selection Sort — Code Notes.md
 
-    Problem: sort given array of numbers                        [slide 3]
-
-    Basic Idea: Divides the list into a sorted and an unsorted region,
-    repeatedly selecting the smallest (or largest) element from the unsorted
-    region and moving it to the sorted region.                  [slide 3]
-
-    We can think of Selection Sort as recursive algorithm: find minimum, put
-    on the first place, run recursively on the array of one size smaller.
-    Running time: T(n) <= T(n - 1) + c * n                      [slide 3]
-
-    Step-by-Step Process                                        [slide 4]
-      1. Find the minimum element in the array.
-      2. Place the minimum element just before unsorted part.
-      3. Move the boundary between sorted and unsorted arrays one element to
-         the right.
-      4. Repeat until the entire array is sorted.
-
-    Python Code                                                 [slide 5]
-    for i from 0 to n-1:
-        min_idx = i
-        for j from i+1 to n:
-            if arr[j] < arr[min_idx]:
-                min_idx = j
-        swap(arr[i], arr[min_idx])
-
-
-THE PICTURE
------------
-The array is split by a boundary. Left of it: sorted, and final. Right of it:
-not sorted yet.
-
-    [ 1  2  3 | 9  5  7 ]       sorted | unsorted
-                ^
-    find the smallest on the right (5), swap it to the boundary:
-    [ 1  2  3  5 | 9  7 ]
-    the boundary moves one step right.
-
-Every value left of the boundary is smaller than or equal to every value right
-of it. So once a value crosses the boundary, it never moves again.
-
-
-RUNNING TIME
-------------
-Unrolling T(n) <= T(n - 1) + c * n from slide 3:
-
-    T(n) <= c*n + c*(n-1) + ... + c*1 = c * n(n+1)/2 = O(n^2)
-
-It does that much work on EVERY input, even an already sorted one. Slide 7
-calls this "not adaptive". Insertion sort, by contrast, is O(n) on sorted
-input.
-
-
-PROS AND CONS [slides 6-7]
---------------------------
-    + O(n) swaps: at most one swap per position. Useful when writing is
-      expensive.
-    + In place: no extra memory.
-    - O(n^2) comparisons, always.
-    - Not stable: equal values may come out in a different order than they
-      went in. Section 4 shows an example.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. selection_sort              slide 5's loop, in place
     2. selection_sort_recursive    slide 3's recursive description
     3. the swap count              slide 6's "O(n) swaps"
@@ -85,16 +23,7 @@ import random
 # =====================================================================
 # 1. SELECTION SORT -- the loop [slide 5]
 # =====================================================================
-# boundary: i on the slide. Everything left of it is sorted and final.
-# smallest_index: min_idx on the slide. Where the smallest value of the
-#                 unsorted part is, as far as the scan has seen.
-# scan_index: j on the slide. Walks over the unsorted part, looking for
-#             anything smaller.
-#
-# The slide's "for j from i+1 to n" means up to n, not including n.
-# Python's range(boundary + 1, len(values)) does exactly that.
-#
-# Sorts the list in place, and also returns it for convenience.
+# Notes: [[Selection Sort — Code Notes#1. Selection sort — the loop]] (variables)
 
 def selection_sort(values):
     for boundary in range(len(values)):
@@ -109,18 +38,7 @@ def selection_sort(values):
 # =====================================================================
 # 2. SELECTION SORT -- recursive [slide 3]
 # =====================================================================
-# "find minimum, put on the first place, run recursively on the array of one
-#  size smaller."
-#
-# start: where the unsorted part begins. The recursion moves it one step right
-#        each call, which is "the array of one size smaller".
-# smallest_index: where the minimum of values[start:] is
-#
-# Each call does c * n work (finding the minimum), then one recursive call on
-# n - 1 values. That is exactly T(n) <= T(n - 1) + c * n.
-#
-# Note: Python's default recursion limit is about 1000. So this version is
-# only for small lists. The loop above is the one to use.
+# Notes: [[Selection Sort — Code Notes#2. Selection sort — recursive]] (variables, running time)
 
 def selection_sort_recursive(values, start=0):
     if start >= len(values) - 1:  # zero or one value left: already sorted
@@ -136,12 +54,7 @@ def selection_sort_recursive(values, start=0):
 # =====================================================================
 # 3. COUNTING THE WORK [slide 6]
 # =====================================================================
-# The same loop, but it counts comparisons and real swaps instead of only
-# sorting.
-#
-# comparison_count: how many times two values were compared
-# swap_count: how many swaps actually moved something. A "swap" of a value
-#             with itself (smallest_index == boundary) is not counted.
+# Notes: [[Selection Sort — Code Notes#3. Counting the work]] (variables)
 
 def selection_sort_counted(values):
     comparison_count = 0

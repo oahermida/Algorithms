@@ -1,114 +1,12 @@
 """
 MATRIX MULTIPLICATION  (naive, divide and conquer, Strassen)
-============================================================
+Advanced Algorithms, Lecture 2, slides 23-27; CLRS 3rd ed., section 4.2 (pp. 75-82).
 
-Advanced Algorithms, Lecture 2 (Ivan Bliznets), slides 23-27. Also CLRS
-(3rd ed.) section 4.2, "Strassen's algorithm for matrix multiplication",
-pp. 75-82. Slide 38 points to CLRS 4.2 for this topic.
+Notes: [[Matrix Multiplication — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Matrix Multiplication — Code Notes.md
 
-    Matrix multiplication                                       [slide 23]
-      - We use matrix multiplication significantly more often than you might
-        think: graphics, economics, optimization, machine learning.
-      - Trivial O(n^3).
-      - Multiplication of two matrices of size 2 x 2:
-
-            ( a  b )   ( x  y )   ( ax + bz   ay + bt )
-            ( c  d ) . ( z  t ) = ( cx + dz   cy + dt )
-
-
-1. THE NAIVE WAY -- O(n^3)
---------------------------
-Entry (row, column) of the answer is row `row` of the left matrix times
-column `column` of the right matrix: multiply pair by pair, add up.
-n^2 entries, n multiplications each: n^3.
-
-CLRS calls this SQUARE-MATRIX-MULTIPLY (p. 75).
-
-
-2. DIVIDE AND CONQUER WITH 8 MULTIPLICATIONS -- still O(n^3)
-------------------------------------------------------------
-    Split matrices of size n x n into 4 matrices of size n/2 x n/2.
-                                                                [slide 24]
-        ( C11  C12 )   ( A11  A12 )   ( B11  B12 )
-        ( C21  C22 ) = ( A21  A22 ) . ( B21  B22 )
-
-        ( C11  C12 )   ( A11 B11 + A12 B21    A11 B12 + A12 B22 )
-        ( C21  C22 ) = ( A21 B11 + A22 B21    A21 B12 + A22 B22 )
-
-        T(n) <= 8 T(n/2) + O(n^2).
-    This leads to O(n^3) time algorithm as in the case of naive algorithm.
-
-It is the 2 x 2 formula from slide 23, where each letter is now a whole
-block. 8 block products, plus 4 block additions at O(n^2) each.
-Master theorem (slide 30): a = 8, b = 2, d = 2. log_2 8 = 3 > 2, so O(n^3).
-No gain -- the split alone does not help.
-
-CLRS calls this SQUARE-MATRIX-MULTIPLY-RECURSIVE (p. 77).
-
-
-3. STRASSEN -- 7 MULTIPLICATIONS -- O(n^2.81)
----------------------------------------------
-    Compute the following:                                      [slide 25]
-        M1 = (A11 + A22) x (B11 + B22);
-        M2 = (A21 + A22) x B11;
-        M3 = A11 x (B12 - B22);
-        M4 = A22 x (B21 - B11);
-        M5 = (A11 + A12) x B22;
-        M6 = (A21 - A11) x (B11 + B12);
-        M7 = (A12 - A22) x (B21 + B22).
-
-    Finally we have:
-        ( C11  C12 )   ( M1 + M4 - M5 + M7    M3 + M5           )
-        ( C21  C22 ) = ( M2 + M4              M1 - M2 + M3 + M6 )
-
-    PS. no need to remember this.
-
-    Hence, we have T(n) <= 7 T(n/2) + O(n^2).
-    T(n) = n^(log_2 7) = n^2.8074.                              [slide 26]
-
-The trick is the same as Karatsuba (slides 20-22): spend more ADDITIONS to
-save one MULTIPLICATION. Additions cost O(n^2), so they are cheap. One fewer
-multiplication per level is what changes the exponent:
-Master theorem with a = 7, b = 2, d = 2. log_2 7 = 2.807 > 2, so O(n^2.807).
-
-Slide 27 is a table of later records for the exponent ("omega"), down to
-2.371552 (2024). None of those are practical.
-
-
-THE SLIDE AND CLRS NAME THE PRODUCTS DIFFERENTLY
-------------------------------------------------
-The slide uses Strassen's original M1-M7. CLRS (pp. 80-81) uses ten sums
-S1-S10 and products P1-P7, in a different order. Same seven products:
-
-    slide           CLRS    product
-    M1   =          P5      (A11 + A22)(B11 + B22)
-    M2   =          P3      (A21 + A22) B11
-    M3   =          P1      A11 (B12 - B22)
-    M4   =          P4      A22 (B21 - B11)
-    M5   =          P2      (A11 + A12) B22
-    M6   =  minus   P7      CLRS has (A11 - A21)(B11 + B12): the sign flips
-    M7   =          P6      (A12 - A22)(B21 + B22)
-
-So CLRS writes C22 = P5 + P1 - P3 - P7, and the slide writes
-C22 = M1 - M2 + M3 + M6. They are the same thing. Since the slide says "no
-need to remember this", the exam point is the RECURRENCE, not the formulas.
-
-
-SIZES THAT ARE NOT A POWER OF TWO
----------------------------------
-Splitting in half again and again only works if n is a power of 2. CLRS
-assumes that (p. 76). Exercise 4.2-3 asks what to do otherwise. The answer
-used here: pad with zeros up to the next power of 2, multiply, then cut the
-answer back down. Zeros add nothing to any product, so the real part of the
-answer is unchanged. Padding at most doubles n, which only changes the
-constant, not the O(...).
-
-The same padding also handles non-square matrices (rows x inner times
-inner x columns): pad everything to one square size.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     0. helpers: add, subtract, split into quadrants, join, pad
     1. multiply_naive                 triple loop, O(n^3)       [slide 23]
     2. multiply_divide_and_conquer    8 block products, O(n^3)  [slide 24]
@@ -201,18 +99,7 @@ def run_padded(recursive_method, left_matrix, right_matrix, counter):
 # =====================================================================
 # 1. NAIVE -- the triple loop [slide 23; CLRS p. 75]
 # =====================================================================
-# row: which row of the answer is being filled
-# column: which column of the answer is being filled
-# inner: walks along row `row` of the left matrix and down column `column`
-#        of the right matrix at the same time
-# entry_total: the running sum for answer[row][column]
-# counter: counts scalar multiplications, for section 4
-#
-# rows * columns entries, inner_count multiplications each.
-# For n x n that is n^3.
-#
-# Works for any compatible shapes, no padding needed. It is the reference
-# answer the other two are checked against.
+# Notes: [[Matrix Multiplication — Code Notes#1. Naive — the triple loop]] (variables)
 
 def multiply_naive(left_matrix, right_matrix, counter=None):
     row_count = len(left_matrix)
@@ -234,17 +121,7 @@ def multiply_naive(left_matrix, right_matrix, counter=None):
 # =====================================================================
 # 2. DIVIDE AND CONQUER, 8 PRODUCTS [slide 24; CLRS p. 77]
 # =====================================================================
-# left_11 .. left_22: the four quadrants of the left matrix (A11 .. A22)
-# right_11 .. right_22: the four quadrants of the right matrix (B11 .. B22)
-# answer_11 .. answer_22: the four quadrants of the answer (C11 .. C22)
-#
-# Base case: 1 x 1 matrices are just one number times one number.
-# Otherwise: 8 recursive products and 4 additions, exactly slide 24's formula.
-#
-# T(n) = 8 T(n/2) + O(n^2) = O(n^3). Same as naive.
-#
-# The recursive part needs n x n with n a power of two. The public function
-# multiply_divide_and_conquer pads first, so any shapes work.
+# Notes: [[Matrix Multiplication — Code Notes#2. Divide and conquer, 8 products]] (variables, recurrence)
 
 def divide_and_conquer_square(left_matrix, right_matrix, counter):
     if len(left_matrix) == 1:  # base case: one number times one number
@@ -274,15 +151,7 @@ def multiply_divide_and_conquer(left_matrix, right_matrix, counter=None):
 # =====================================================================
 # 3. STRASSEN, 7 PRODUCTS [slides 25-26; CLRS pp. 79-82]
 # =====================================================================
-# left_11 .. left_22: the quadrants of the left matrix (A11 .. A22)
-# right_11 .. right_22: the quadrants of the right matrix (B11 .. B22)
-# product_1 .. product_7: the slide's M1 .. M7, one recursive product each
-# answer_11 .. answer_22: the quadrants of the answer (C11 .. C22)
-#
-# Same split as section 2, but only 7 recursive products. The extra additions
-# and subtractions are all O(n^2), so they do not change the exponent.
-#
-# T(n) = 7 T(n/2) + O(n^2) = O(n^log2(7)) = O(n^2.807).
+# Notes: [[Matrix Multiplication — Code Notes#3. Strassen, 7 products]] (variables, recurrence)
 
 def strassen_square(left_matrix, right_matrix, counter):
     if len(left_matrix) == 1:  # base case: one number times one number

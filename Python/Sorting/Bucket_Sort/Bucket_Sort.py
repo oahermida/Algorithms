@@ -1,88 +1,12 @@
 r"""
 BUCKET SORT -- numbers in [0, 1), average O(n) when they are spread evenly
-==========================================================================
+Lecture 6-7 (Ivan Bliznets), slides 45-48; CLRS 3rd ed., section 8.4 (p. 201).
 
-Advanced Algorithms, Lecture 6-7 (Ivan Bliznets), slides 45-48. Also CLRS 3rd
-ed., section 8.4 (BUCKET-SORT, p. 201).
+Notes: [[Bucket Sort — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Bucket Sort — Code Notes.md
 
-    Bucket Sort [slide 45]
-        Assume that the input array A contains n numbers from [0, 1], and these
-        numbers are "approximately" equally distributed in the interval [0, 1].
-        In this case, we can sort this array approximately in linear time.
-
-        Example: During a day you check time n times, and you record into the
-        array number of milliseconds each time that you have looked at watches.
-
-    BUCKETSORT(A) [slide 46]
-        n <- length(A)
-        B <- new array of length n
-        for i in {0, .., n-1} do
-            B[i] empty list
-        end for
-        for i in {0, .., n-1} do
-            insert A[i] into B[floor(n i)]        <- SLIDE TYPO: floor(n * A[i])
-        end for
-        for i in {0, .., n-1} do
-            sort each list B[i] by Insertion Sort
-        end for
-        Concatenate all lists
-
-The idea: cut [0, 1) into n equal slices, one bucket per slice. A value v goes
-into bucket floor(n * v): with n = 10, 0.55 goes into bucket 5, which holds
-[0.5, 0.6). Every value in bucket 3 is smaller than every value in bucket 4,
-so once each bucket is sorted on its own, reading the buckets left to right
-gives the sorted list.
-
-
-TWO SLIDE DETAILS
------------------
-    floor(n i). The bucket index depends on the VALUE, not on its position.
-        floor(n * i) would just put element i into bucket i. CLRS line 6 has
-        B[floor(n A[i])].
-
-    [0, 1] vs [0, 1). The slide includes 1. CLRS uses the half-open [0, 1), and
-        this file follows CLRS: floor(n * 1) = n, one past the last bucket.
-        (A clamp, min(n-1, ...), would fix it if 1 must be allowed.)
-
-
-THE SLIDE 47 EXAMPLE
---------------------
-         A         B                  Sorted(B)            Sorted(A)
-    0   0.55       -                  -                    0.26
-    1   0.26       -                  -                    0.32
-    2   0.71       0.26               0.26                 0.44
-    3   0.99       0.32               0.32                 0.51
-    4   0.77       0.44               0.44                 0.52
-    5   0.52       0.55, 0.52, 0.51   0.51, 0.52, 0.55     0.55
-    6   0.51       -                  -                    0.71
-    7   0.81       0.71, 0.77         0.71, 0.77           0.77
-    8   0.32       0.81               0.81                 0.81
-    9   0.44       0.99               0.99                 0.99
-
-Bucket 5 got three values, buckets 0, 1 and 6 got none. Section 3 prints the
-same table from the code.
-
-
-RUNNING TIME [slide 48]
------------------------
-    - In ideal case all lists in B have length 1, and in this case it is
-      trivial to sort such lists by Insertion Sort.
-    - It might happened that one of the lists in B contain all n numbers.
-    - The worst case running time is Theta(n^2). However, in average it is
-      Theta(n).
-
-Everything except the insertion sorts is O(n). Insertion sort on a bucket of
-size s costs about s^2. Evenly spread input gives buckets of about 1 element
-each, so the total is O(n). (CLRS p. 202 proves that the expected value of
-(bucket size)^2 is 2 - 1/n, a constant, for every bucket.) If every value lands in the same bucket,
-that one insertion sort is n^2. Section 4 builds both inputs and counts.
-
-Why insertion sort and not something faster: buckets are expected to be tiny,
-and on tiny lists insertion sort is the cheapest sort there is.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. insertion_sort     the per-bucket sort, with a comparison counter
     2. bucket_sort        slide 46 / CLRS p. 201
     3. slide 47's table   printed from the code
@@ -102,13 +26,7 @@ stats = {"comparisons": 0}
 # =====================================================================
 # 1. INSERTION SORT FOR ONE BUCKET [CLRS 2.1]
 # =====================================================================
-# bucket: one list, sorted in place
-# position: the element being inserted into the sorted part on its left
-# current: its value
-# slot: where it will go; moves left while the value there is bigger
-#
-# The same insertion sort as ../Insertion_Sort/insert_sort.py. Stopping at
-# "<=" keeps equal values in order, so it is stable.
+# Notes: [[Bucket Sort — Code Notes#1. Insertion sort for one bucket]] (variables, stability)
 
 def insertion_sort(bucket):
     for position in range(1, len(bucket)):
@@ -126,12 +44,6 @@ def insertion_sort(bucket):
 # =====================================================================
 # 2. BUCKET SORT [slide 46; CLRS 8.4, p. 201]
 # =====================================================================
-# values: numbers in [0, 1) (slide A); not changed, a new list is returned
-# bucket_count: n, one bucket per value
-# buckets: B, a list of n lists; bucket number b holds values in
-#          [b/n, (b+1)/n)
-# bucket_index: floor(n * value), the bucket a value belongs in
-#
 #     BUCKET-SORT(A)
 #     1 let B[0 .. n-1] be a new array
 #     2 n = A.length
@@ -142,6 +54,8 @@ def insertion_sort(bucket):
 #     7 for i = 0 to n-1
 #     8     sort list B[i] with insertion sort
 #     9 concatenate the lists B[0], B[1], ..., B[n-1] together in order
+#
+# Notes: [[Bucket Sort — Code Notes#2. Bucket sort]] (variables)
 
 def bucket_sort(values):
     for value in values:

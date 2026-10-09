@@ -1,24 +1,8 @@
 # Insertion sort - instrumented copy.
 #
-# Generated from insert_sort.py in this directory. That file is the clean
-# algorithm and the one to edit; this one is the same program with print
-# statements added around it, and nothing else changed.
-#
-# Invariant: at the top of each pass, A[0 .. j-1] is already sorted.
-#
-# j   - index of the element being inserted; runs from 1 (index 0 is a
-#       sorted prefix of one) to the end of the list.
-# key - a copy of A[j], saved because the shifting below overwrites slot j.
-# i   - scans leftward from j-1 through the sorted prefix, shifting each
-#       element greater than key one slot right, and stopping at the first
-#       element that isn't greater (or at i = -1, past the front).
-#
-# key then lands at A[i + 1], the gap the shifting opened, which extends the
-# sorted prefix to A[0 .. j].
-#
-# Each trace line below is tagged [Ln] with the line of the algorithm it is
-# reporting on. The numbers are looked up from this file at startup, so they
-# stay correct even if the code moves around.
+# Notes: [[Insert Sort Traced — Code Notes]]
+#   ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+#   Advanced Algorithms/Code Notes/Insert Sort Traced — Code Notes.md
 
 import pathlib
 

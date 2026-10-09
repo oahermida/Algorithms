@@ -1,160 +1,12 @@
 r"""
 MAGIC BUNNY AND REAL BUNNY
-==========================
+Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slides 3-14.
 
-Both problems come from Advanced Algorithms, Lecture 4-5 (Ivan Bliznets):
-Magic Bunny on slides 3-8, Real Bunny on slides 9-14. Neither has a textbook
-citation -- the lecture is the only source, so the statements below are the
-lecturer's own, kept word for word where it matters.
+Notes: [[Bunny DP — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Bunny DP — Code Notes.md
 
-    MAGIC BUNNY [slide 3]
-        - An array a[0 . . . n] of awards and penalties (values can be negative).
-        - A bunny starts at cell 0 and must reach cell n.
-        - From cell i the bunny may jump to cell i + 1 (a short hop) or
-          cell i + 3 (a long jump).
-        - Every cell the bunny LANDS ON (including start and finish)
-          contributes its value to the total.
-        - Goal: choose a sequence of jumps from 0 to n maximising the total.
-
-The one thing to hold on to before anything else: ONLY THE CELLS YOU LAND ON
-COUNT. A +3 jump does not collect the two cells it flies over -- it skips them.
-That is the whole reason the problem is interesting, because it makes a long
-jump the bunny's way of DODGING a run of penalties.
-
-    a = [ 2, -5, -5, 4, -1, 3, 7 ]
-
-      cell     0     1     2     3     4     5     6
-      a[i]     2    -5    -5     4    -1     3     7
-                \________________/
-                 one +3 jump flies straight over both -5 cells
-
-
-WHY THIS IS A DP PROBLEM [slide 4]
-----------------------------------
-The same two properties as Fibonacci (see ../Fibonacci_DP/Fibonacci_DP.py):
-
-    OPTIMAL SUBSTRUCTURE   the best path to cell i is built from the best path
-                           to i-1 or to i-3, whichever was worth more. You never
-                           need to know HOW those were reached, only their value.
-
-    OVERLAPPING SUBPROBLEMS   the best value at a cell is reused later by both
-                              i+1 and i+3, so a plain recursion recomputes the
-                              same cell many times over.
-
-
-THE STATE AND THE RECURRENCE [slide 5]
---------------------------------------
-    dp[i] = the maximum total value collectible on ANY valid path from cell 0
-            to cell i.
-
-The framing that makes the recurrence fall out is ARRIVAL-BASED: stand on cell i
-and ask "what is the best way I could have arrived here?" There are only two
-answers.
-
-        cell i-3 ------------- +3 jump -------------.
-                    (flies OVER i-2 and i-1,        |
-                     collecting NEITHER)            v
-                                                 cell i
-        cell i-1 ------------- +1 hop --------------^
-
-Take whichever arrival was better, then add the cell you are standing on:
-
-        dp[i] = a[i] + max( dp[i-1], dp[i-3] )
-
-        base case:  dp[0] = a[0]          the bunny starts on cell 0 and
-                                          collects it
-        answer:     dp[n]
-
-THE -infinity CONVENTION [slide 5].  Any dp[j] with j < 0 counts as -infinity,
-meaning "that jump simply isn't available this near the start". Using 0 instead
-would be a bug: 0 claims "there is a legal path here worth nothing", whereas
--infinity says "there is no legal path here AT ALL". Anything built on top of
--infinity stays -infinity, so an impossible route can never win a max. The same
-trick comes back in the Real Bunny.
-
-
-REAL BUNNY -- THE NEW RULE [slide 9]
-------------------------------------
-Same array, same start, same goal, one extra restriction:
-
-    The bunny is magic but TIRES OUT -- it cannot perform two jumps of length 3
-    in a row. After a length-3 jump it must take a length-1 jump (a rest) before
-    it is allowed to jump length 3 again.
-
-WHAT BREAKS [slide 10].  Before, dp[i] only needed the best value of reaching
-cell i; it did not matter how the bunny got there. Now it matters -- whether a
-+3 jump is legal from cell i depends on whether the LAST jump was already a +3.
-One number per cell is no longer enough information. The fix is to extend the
-state with one extra bit: was the last jump length 1 or length 3?
-
-That bit turns the problem into a two-state machine:
-
-                    +1 hop (still rested)
-                     .--------------.
-                     |              |
-                     v              |
-                [ STATE 1 ] --------'
-                last jump was +1
-                    |        ^
-          +3 jump   |        |   +1 hop -- the forced rest
-                    v        |
-                [ STATE 3 ] -'
-                last jump was +3
-                    |
-                    X   a +3 jump from here is ILLEGAL
-
-
-THE STATE AND THE RECURRENCE [slide 11]
----------------------------------------
-    dp[i][1] = max value reaching i where the last jump had length 1 (or i = 0)
-    dp[i][3] = max value reaching i where the last jump had length 3
-
-    base cases:  dp[0][1] = a[0]          the bunny starts RESTED
-                 dp[0][3] = -infinity     it cannot have arrived by a +3 jump
-
-    the two ways into            dp1[i-1] --.
-    dp1[i] -- a +1 hop                       \  +1 hop
-    is legal from either                      v
-    state                        dp3[i-1] -->  dp1[i]
-
-        dp[i][1] = a[i] + max( dp[i-1][1], dp[i-1][3] )
-
-    the ONE way into             dp1[i-3] ---- +3 jump ---->  dp3[i]
-    dp3[i] -- the bunny
-    had to be rested             dp3[i-3] --X  ILLEGAL: that would be
-                                               two +3 jumps in a row
-
-        dp[i][3] = a[i] + dp[i-3][1]          NOT dp[i-3][3]  [slide 12]
-
-    answer:  max( dp[n][1], dp[n][3] )        either ending is acceptable
-
-The slide writes "# NOT dp3[i-3] !" in the pseudocode itself, which is a strong
-hint that it is the mistake people make. Section 6 below implements the wrong
-version on purpose and shows exactly what it costs.
-
-
-COMPLEXITY [slides 8 and 14]
-----------------------------
-    Magic bunny   time O(n)   space O(n), or O(1) with a rolling window
-    Real bunny    time O(n)   space O(n) for both arrays, or O(1) rolling
-
-Real Bunny is still O(n): each cell now does a constant amount of EXTRA work --
-two states instead of one -- and a constant times O(n) is still O(n).
-
-THE GENERAL PATTERN [slide 14], which is the part worth carrying to the exam:
-whenever a constraint depends on the HISTORY of recent choices ("can't repeat X
-twice in a row", "must alternate", "cooldown after an action"), augment the DP
-state with just enough memory to capture that history. Here a single bit was
-enough. A "no +3 jump within the last k moves" rule would need a state tracking
-how many steps since the last +3, i.e. dp[i][0 . . . k].
-
-Slide 8 makes the matching point for the Magic Bunny: the arrival-based
-recurrence generalises immediately to more jump options (i+1, i+3, i+5) by
-adding more terms inside the max.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. magic_bunny            the lecturer's pseudocode [slide 6], as Python
     2. magic_bunny_rolling    same answer, O(1) space  [slide 15's question]
     3. restore_magic_path     which cells the bunny actually landed on
@@ -180,18 +32,7 @@ REAL_SLIDE_AWARDS = [1, -10, -10, 5, -10, -10, 6]    # slide 13, answer -8
 # =====================================================================
 # 1. MAGIC BUNNY -- the lecturer's pseudocode [slide 6]
 # =====================================================================
-# awards         - the array a[0 . . . n]; awards[i] is what cell i pays out
-# best_to_cell   - the dp table; best_to_cell[i] is dp[i], the best total
-#                  collectible on any legal path from cell 0 to cell i
-# cell           - the i being filled on this pass; runs 1, 2, ..., n
-# best_arrival   - the better of the two predecessors, before adding a[cell]
-#
-# The loop fills strictly left to right, so when cell is reached, both cell-1
-# and cell-3 already hold their final values. That ordering is the entire
-# reason no recursion is needed.
-#
-# The table is returned alongside the answer because the worked example, the
-# path restoring and the agreement checks all want to look at it.
+# Notes: [[Bunny DP — Code Notes#1. Magic Bunny — the lecturer's pseudocode]] (variables, loop order)
 
 def magic_bunny(awards):
     last_cell = len(awards) - 1
@@ -211,22 +52,7 @@ def magic_bunny(awards):
 # =====================================================================
 # 2. MAGIC BUNNY, O(1) SPACE [slide 15 asks "how to save a bit of space?"]
 # =====================================================================
-# Look at what the loop above actually reads on the pass for cell i: slots i-1
-# and i-3, and nothing else. Everything left of i-3 is dead. So keep a window of
-# the last three values instead of the whole table.
-#
-# value_one_back   - dp[cell - 1]
-# value_two_back   - dp[cell - 2]   (never read; carried only so the window can shift)
-# value_three_back - dp[cell - 3]
-#
-# The three names are reassigned together on one line, for the same reason the
-# Fibonacci rolling version does it: the right-hand side is evaluated in full
-# before anything is overwritten.
-#
-# The trade is real -- this version CANNOT restore the path, because restoring
-# needs the whole table to walk back through. That is the actual answer to the
-# lecturer's pairing of the two questions on slide 15: you can have O(1) space
-# OR the path, not both, unless you re-run the computation.
+# Notes: [[Bunny DP — Code Notes#2. Magic Bunny, O(1) space]] (variables, the trade-off)
 
 def magic_bunny_rolling(awards):
     value_three_back = NEGATIVE_INFINITY           # dp[-2], does not exist
@@ -248,16 +74,7 @@ def magic_bunny_rolling(awards):
 # =====================================================================
 # 3. PATH RESTORING [slide 15, "can we restore an optimal path?"]
 # =====================================================================
-# The table holds only values, not routes -- but the route can be recovered by
-# reading the table BACKWARDS. Stand on the last cell and ask the same arrival
-# question the recurrence asked: which predecessor did this value come from?
-#
-# cell    - where the walk-back currently stands, starting at n
-# path    - the cells landed on, collected last-to-first and reversed at the end
-#
-# Whichever of dp[cell-3] and dp[cell-1] was larger is the one the max picked,
-# so that is the cell jumped from. The >= makes ties prefer the +3 jump; either
-# choice is a genuinely optimal path, they just differ in which one gets printed.
+# Notes: [[Bunny DP — Code Notes#3. Path restoring]] (variables, tie-breaking)
 
 def restore_magic_path(awards, best_to_cell):
     path = []
@@ -278,21 +95,7 @@ def restore_magic_path(awards, best_to_cell):
 # =====================================================================
 # 4. REAL BUNNY -- two states [slide 12]
 # =====================================================================
-# The slides call the two tables dp[i][1] and dp[i][3]. Named here after what
-# the bit actually means, since "1" and "3" as array indices are easy to misread:
-#
-# arrived_by_hop   - dp[i][1]: best value reaching cell i with the last jump
-#                    length 1 (or i = 0, because the bunny starts rested)
-# arrived_by_jump  - dp[i][3]: best value reaching cell i with the last jump
-#                    length 3, which means the bunny is now TIRED
-#
-# The asymmetry between the two lines below is the whole problem:
-#
-#   a +1 hop is legal from either state, so arrived_by_hop takes the max of both
-#   a +3 jump needs a rested bunny, so arrived_by_jump reads arrived_by_hop ONLY
-#
-# arrived_by_jump[cell] stays -infinity while cell < 3, because no +3 jump can
-# have landed there yet -- there is no such cell to have jumped from.
+# Notes: [[Bunny DP — Code Notes#4. Real Bunny — two states]] (variables, the asymmetry)
 
 def real_bunny(awards):
     last_cell = len(awards) - 1
@@ -319,18 +122,7 @@ def real_bunny(awards):
 # =====================================================================
 # 5. PATH RESTORING WITH A STATE BIT
 # =====================================================================
-# Same walk-back as the magic bunny, except the state has to be carried along:
-# where you came from depends on which table you are currently standing in.
-#
-# current_state  - 1 if the walk-back is sitting in arrived_by_hop, 3 if in
-#                  arrived_by_jump
-#
-#   in state 3 at cell i  ->  there is only one way in: a +3 from i-3, and the
-#                             bunny was rested there, so move to i-3, state 1
-#   in state 1 at cell i  ->  came by +1 from i-1, in whichever state held the
-#                             larger value there
-#
-# Starting state is whichever of the two tables won the final max.
+# Notes: [[Bunny DP — Code Notes#5. Path restoring with a state bit]] (variables)
 
 def restore_real_path(awards, arrived_by_hop, arrived_by_jump):
     last_cell = len(awards) - 1
@@ -613,86 +405,4 @@ print("\n  (the last one is a sanity property, not a coincidence: every legal re
 print("   path is also a legal magic-bunny path, so the real bunny can never score more)")
 
 
-# === How it Runs ===
-#
-# --- magic_bunny ---
-# best_to_cell is the dp table, one slot per cell, filled strictly left to right
-# slot 0 is written directly from awards[0] -- the base case, the only value the
-# recurrence cannot produce
-# each pass computes ONE slot and never revisits it: look back 1, look back 3 if
-# that cell exists, take the better arrival, add the cell you are standing on
-# no recursion, because the loop order already guarantees both predecessors are final
-#
-# filling the table for a = [2, -5, -5, 4, -1, 3, 7]:
-#   dp[0] = a[0]                                    = 2      base case
-#   dp[1] = -5 + dp[0]                 = -5 +  2    = -3     cell-3 < 0, only the hop exists
-#   dp[2] = -5 + dp[1]                 = -5 + -3    = -8     same
-#   dp[3] =  4 + max(dp[2], dp[0]) =  4 + max(-8, 2) = 6     <- the +3 jump WINS
-#   dp[4] = -1 + max(dp[3], dp[1]) = -1 + max( 6,-3) = 5     hop from 3
-#   dp[5] =  3 + max(dp[4], dp[2]) =  3 + max( 5,-8) = 8     hop from 4
-#   dp[6] =  7 + max(dp[5], dp[3]) =  7 + max( 8, 6) = 15    hop from 5
-#   return dp[6] = 15
-#
-# dp[3] is the cell the whole example is built around. Arriving by hops means
-# landing on both -5 cells (2 - 5 - 5 + 4 = -4); arriving by a +3 jump from cell 0
-# skips them entirely (2 + 4 = 6). The jump collects NOTHING in mid-air, which is
-# exactly why it wins here
-#
-# --- restore_magic_path ---
-# the table says WHAT the best value is, not HOW it was reached; the walk-back
-# recovers the route by asking the arrival question again, in reverse
-# start at cell 6, compare dp[3]=6 against dp[5]=8 -> 8 is bigger, so the last
-# jump was a +1 hop from cell 5. step to 5 and repeat
-#   at 6: max(dp[5]=8,  dp[3]=6)  -> from 5, a hop
-#   at 5: max(dp[4]=5,  dp[2]=-8) -> from 4, a hop
-#   at 4: max(dp[3]=6,  dp[1]=-3) -> from 3, a hop
-#   at 3: max(dp[2]=-8, dp[0]=2)  -> from 0, a JUMP
-#   at 0: stop, the start
-#   collected backwards as [6,5,4,3,0], reversed to 0 -> 3 -> 4 -> 5 -> 6
-# exactly the path on slide 7, and 2 + 4 + (-1) + 3 + 7 = 15 confirms it
-#
-# --- real_bunny ---
-# two tables now, because one number per cell can no longer answer "may I jump?"
-#   arrived_by_hop[i]  = dp[i][1], best value reaching i with the last jump = 1
-#   arrived_by_jump[i] = dp[i][3], best value reaching i with the last jump = 3
-# both are filled on the same pass, left to right, same as before
-# arrived_by_hop reads BOTH tables at i-1, because a hop is legal whatever the
-# bunny just did; arrived_by_jump reads only arrived_by_hop at i-3, because a
-# jump needs a rested bunny. that asymmetry IS the rest rule
-#
-# filling both tables for a = [1, -10, -10, 5, -10, -10, 6]:
-#   i=0  dp1 =   1                                          base: starts rested
-#        dp3 =  -inf                                        cannot have jumped in
-#   i=1  dp1 = -10 + max(  1, -inf)               =  -9
-#        dp3 =  -inf                                        i-3 < 0, no such jump
-#   i=2  dp1 = -10 + max( -9, -inf)               = -19
-#        dp3 =  -inf                                        i-3 < 0
-#   i=3  dp1 =   5 + max(-19, -inf)               = -14     hopped in from 2
-#        dp3 =   5 + dp1[0] = 5 + 1               =   6     <- jumped in from 0
-#   i=4  dp1 = -10 + max(-14,    6)               =  -4     <- the forced rest, off dp3[3]
-#        dp3 = -10 + dp1[1] = -10 + -9            = -19     NOT dp3[1], which is -inf anyway
-#   i=5  dp1 = -10 + max( -4,  -19)               = -14
-#        dp3 = -10 + dp1[2] = -10 + -19           = -29
-#   i=6  dp1 =   6 + max(-14,  -29)               =  -8
-#        dp3 =   6 + dp1[3] = 6 + -14             =  -8
-#   return max(dp1[6], dp3[6]) = max(-8, -8) = -8
-#
-# the interesting slot is dp1[4] = -4. it reads dp3[3] = 6, the tired bunny that
-# just jumped in from cell 0 -- and that hop is precisely the REST the rule demands.
-# the rule is never checked anywhere; it is enforced entirely by which table each
-# line is allowed to read
-#
-# without the rule the bunny would go 0 -> 3 -> 6 for 1 + 5 + 6 = 12. that needs two
-# +3 jumps back to back, so it is now illegal, and the best legal answer is -8
-#
-# --- restore_real_path ---
-# same walk-back, but the state bit decides which question to ask
-#   dp1[6] = -8 and dp3[6] = -8 tie, so start in state 1 (the >= prefers the hop)
-#   at 6 state 1: dp1[5]=-14 vs dp3[5]=-29 -> from 5, state 1
-#   at 5 state 1: dp1[4]= -4 vs dp3[4]=-19 -> from 4, state 1
-#   at 4 state 1: dp1[3]=-14 vs dp3[3]=  6 -> from 3, state 3   <- arrived TIRED
-#   at 3 state 3: only one way in, a +3 from cell 0, which was rested
-#   at 0: stop
-#   0 -> 3 -> 4 -> 5 -> 6, the path on slide 13, worth 1 + 5 - 10 - 10 + 6 = -8
-# in state 3 there is no comparison to make at all, which is the traceback seeing
-# the same asymmetry the forward pass had
+# Notes: [[Bunny DP — Code Notes#How it runs]] (both slide examples, traced)

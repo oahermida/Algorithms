@@ -1,81 +1,12 @@
 """
 INTERVAL SCHEDULING  (independent set in an interval graph)
-===========================================================
+Lecture 1 (Ivan Bliznets), slides 23-25; CLRS 3rd ed., section 16.1 (pp. 415-422).
 
-Advanced Algorithms, Lecture 1 (Ivan Bliznets), slides 23-25. Also CLRS
-(3rd ed.) section 16.1, "An activity-selection problem", pp. 415-422.
+Notes: [[Interval Scheduling — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Interval Scheduling — Code Notes.md
 
-    INDEPENDENT SET IN INTERVAL GRAPH [slide 23]
-        Input:     n tasks described by starting time a_i and ending time b_i
-                   for each i in {1, 2, ..., n}.
-        Question:  You can perform only one task at a time. Schedule your work
-                   such that you complete the largest amount of tasks.
-
-        Example:   Input array [(2, 10), (5, 14), (2, 8), (12, 20), (18, 22),
-                                (1, 30), (21, 25)]
-                   Output: (2, 10), (12, 20), (21, 25).
-
-Slides 24-25 are blank in the PDF. The algorithm was worked on the board.
-Slide 26 lists it under "Application of sorting algorithms", so the intended
-method is: sort, then sweep. That is the CLRS greedy algorithm.
-
-
-WHY "INTERVAL GRAPH"
---------------------
-Draw one dot per task. Join two dots with a line when the tasks overlap in
-time. That drawing is the interval graph. A set of tasks you can ALL do is a
-set of dots with no line between any two of them -- an "independent set".
-So "most tasks" = "largest independent set". Same problem, two names.
-
-
-THE GREEDY RULE -- EARLIEST FINISH FIRST
-----------------------------------------
-    1. Sort the tasks by their END time.
-    2. Walk through them in that order.
-    3. Take a task if it starts after the last taken task ended.
-       Otherwise skip it.
-
-CLRS writes this as GREEDY-ACTIVITY-SELECTOR (p. 421), assuming the
-activities are already sorted by finish time f_1 <= f_2 <= ... <= f_n:
-
-    GREEDY-ACTIVITY-SELECTOR(s, f)
-    1  n = s.length
-    2  A = {a_1}
-    3  k = 1
-    4  for m = 2 to n
-    5      if s[m] >= f[k]
-    6          A = A U {a_m}
-    7          k = m
-    8  return A
-
-Why it is safe (CLRS Theorem 16.1, p. 418): take ANY best schedule. Swap its
-first task for the task that finishes earliest overall. That task ends no
-later, so it cannot clash with anything after it. The schedule is still valid
-and still the same size. So some best schedule starts with the
-earliest-finishing task. Take it, throw away everything that clashes, and
-repeat the argument on what is left.
-
-Picking the task that ends first leaves the most time for the rest.
-
-
-TWO THINGS TO WATCH
--------------------
-    TOUCHING INTERVALS. Is (2, 10) compatible with (10, 12)? The slide does not
-    say. CLRS uses half-open intervals [s, f), so a task may start at the exact
-    moment the previous one ends: the test is  start >= last_end.  This file
-    follows CLRS. If the course wanted closed intervals, change >= to >.
-    The slide's example never has two tasks touching, so its answer is the
-    same either way.
-
-    THE SLIDE'S OUTPUT IS ONE OF SEVERAL. Greedy on the slide's input returns
-    (2, 8), (12, 20), (21, 25), not (2, 10), (12, 20), (21, 25). Both have 3
-    tasks, and 3 is the maximum. The question asks for the largest NUMBER of
-    tasks, so both are correct. (2, 8) comes first because it ends at 8,
-    before (2, 10) ends at 10.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_schedule      every subset, O(2^n * n^2)
     2. greedy_schedule           sort by end time, sweep, O(n log n)
                                                    [slides 23-26; CLRS 16.1]
@@ -111,14 +42,7 @@ def compatible(first_task, second_task):
 # =====================================================================
 # 1. BRUTE FORCE -- every subset
 # =====================================================================
-# Try subsets from the BIGGEST size down. The first subset where every pair
-# is compatible is a best answer.
-#
-# subset_size: how many tasks this round tries to fit in
-# chosen: one particular group of that many tasks
-#
-# Up to 2^n subsets, and checking one costs O(n^2) pairs: O(2^n * n^2).
-# Only usable for small n. It is here to check the greedy against.
+# Notes: [[Interval Scheduling — Code Notes#1. Brute force — every subset]] (variables, cost)
 
 def brute_force_schedule(tasks):
     for subset_size in range(len(tasks), 0, -1):
@@ -155,14 +79,7 @@ def greedy_schedule(tasks):
 # =====================================================================
 # 3. GREEDY RULES THAT DO NOT WORK [CLRS exercise 16.1-3, p. 422]
 # =====================================================================
-# The sort key is the whole algorithm. Sorting by something else gives a
-# greedy that looks just as sensible and is wrong.
-#
-# sort_key: which number to sort the tasks by before sweeping
-# chosen: tasks taken so far
-#
-# A taken task must be compatible with EVERY task already taken. (With a
-# different order, checking only the last one is not enough.)
+# Notes: [[Interval Scheduling — Code Notes#3. Greedy rules that do not work]] (variables)
 
 def greedy_by(tasks, sort_key):
     chosen = []

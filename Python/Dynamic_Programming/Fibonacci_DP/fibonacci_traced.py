@@ -1,33 +1,10 @@
 # Fibonacci, dynamic programming - instrumented copy.
 #
-# Generated from Fibonacci_DP.py in this directory. That file is the clean set of
-# algorithms and the one to edit; this one is the same code with print statements
-# added around it, and nothing else changed.
+# Generated from Fibonacci_DP.py in this directory.
 #
-# It narrates the two DP versions side by side on the same index, so the point
-# that they are one recurrence read in two directions is visible rather than
-# asserted:
-#
-#   memoisation (top-down)  - starts at index, recurses DOWN to the base cases,
-#                             and writes each answer into the cache on the way
-#                             back UP. The cache starts empty and fills in
-#                             descending order of index.
-#   tabulation (bottom-up)  - starts AT the base cases and fills a table
-#                             forward. Nothing recurses; slot k is written once
-#                             and only after slots k-1 and k-2 already hold
-#                             their final values.
-#
-# index          - the n in F(n), the value being asked for
-# memo_table     - dict mapping index -> F(index), for the top-down version
-# depth          - how deep the recursion currently is, used only for indenting
-# fibonacci_table- list where slot k holds F(k), for the bottom-up version
-# position       - the slot being filled on this pass of the bottom-up loop
-# previous_value - F(position - 2) in the rolling version
-# current_value  - F(position - 1) in the rolling version
-#
-# Each trace line is tagged [Ln] with the line of the algorithm it is reporting
-# on. The numbers are looked up from this file at startup, so they stay correct
-# even if the code moves around.
+# Notes: [[Fibonacci Traced — Code Notes]] (what it narrates, variables, [Ln] tags)
+#   ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+#   Advanced Algorithms/Code Notes/Fibonacci Traced — Code Notes.md
 
 import pathlib
 

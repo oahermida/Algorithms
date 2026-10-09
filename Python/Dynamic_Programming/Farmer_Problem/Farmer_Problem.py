@@ -1,169 +1,12 @@
 r"""
 THE FARMER PROBLEM  (maximal square of good land)
-=================================================
-
 Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slide 23.
 
-    A PROVENANCE NOTE, because this file is different from its neighbours.
-    Every other problem in this collection quotes the lecture deck directly.
-    Slide 23 has no text at all -- it is a title and the words "Link to google
-    mock interview", pointing at:
+Notes: [[Farmer Problem — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Farmer Problem — Code Notes.md
 
-        https://www.youtube.com/watch?v=Ti5vfu9arXQ
-        "How to solve a Google coding interview question", Life at Google
-
-    So the statement below is transcribed from the interviewer's screen in that
-    video, not from the deck. It is the only statement of the problem that
-    exists for this course. The candidate's working solution, whiteboarded
-    later in the same video, is discussed in THE VIDEO'S OWN SOLUTION below --
-    it reaches the same recurrence, and its way of handling the grid edges is
-    the one this file uses.
-
-    THE FARMER PROBLEM [from the video]
-        A farmer wants to farm their land with the maximum area where good land
-        is present. The "land" is represented as a matrix with 1s and 0s, where
-        1s mean good land and 0s mean bad land. The farmer only want to farm in
-        a square of good land with the maximum area. Please help the farmer to
-        find the maximum area of the land they can farm in good land.
-
-        Example:
-            0 1 1 0 1
-            1 1 0 1 0
-            0 1 1 1 0
-            1 1 1 1 0
-            1 1 1 1 1
-            0 0 0 0 0
-
-TWO WORDS DO ALL THE WORK, and both are easy to read past:
-
-    SQUARE.  Not a rectangle. Every side the same length. This is the entire
-             reason the problem has a clean O(nm) solution -- see THE SQUARE
-             CONSTRAINT IS THE ALGORITHM below.
-
-    AREA.    The answer is a number of cells, not a side length. A 3 x 3 square
-             is the answer "9", not "3". The DP naturally computes the side, so
-             the last step squares it -- an easy mark to drop.
-
-
-THE STATE
----------
-The framing that makes this fall out is the same arrival-based one as the
-bunnies and the knight, adapted to two dimensions. Do NOT ask "where is the
-biggest square?" -- ask a question every cell can answer about itself:
-
-    side[i][j] = the side length of the LARGEST SQUARE OF GOOD LAND whose
-                 BOTTOM-RIGHT CORNER is the cell (i, j)
-
-Fixing the corner is what turns a search over all squares into one value per
-cell. Every square has exactly one bottom-right corner, so the n*m answers
-cover every possible square exactly once, and the biggest square overall is
-just the largest entry in the table.
-
-    if the land at (i, j) is bad:   side[i][j] = 0    no square can end here
-    otherwise:                      side[i][j] = 1 + min( three neighbours )
-
-
-THE RECURRENCE, AND WHY IT IS A MIN OF THREE
---------------------------------------------
-                j-1    j
-              +------+------+
-        i-1   |  a   |  b   |      a = side[i-1][j-1]   diagonally up-left
-              +------+------+      b = side[i-1][j]     directly above
-         i    |  c   |  X   |      c = side[i][j-1]     directly left
-              +------+------+      X = side[i][j]
-
-    side[i][j] = 1 + min( a, b, c )        when land[i][j] is good
-
-WHY. Suppose a square of side k sits with its bottom-right corner at X. Strip
-off X's own row and column and what remains is a square of side k-1 -- and that
-same k-1 square is simultaneously covered by all three neighbours' squares:
-
-    it ends at (i-1, j-1), so a >= k-1
-    it fits inside the square ending above,   so b >= k-1
-    it fits inside the square ending left,    so c >= k-1
-
-So k-1 <= min(a, b, c). The converse holds too: if all three are at least k-1
-then the whole k x k block is good land, so the square exists. Hence k is
-exactly 1 + min(a, b, c). The MIN is the bottleneck -- one blocked direction
-caps the square, no matter how much room the other two have.
-
-ALL THREE TERMS ARE NECESSARY. Dropping the diagonal looks harmless and is not;
-section 5 runs a grid where "1 + min(above, left)" claims a 3 x 3 square that
-contains a 0. The diagonal is the only term that sees the interior.
-
-
-THE SQUARE CONSTRAINT IS THE ALGORITHM
---------------------------------------
-This recurrence works because a square is described by ONE number. Ask the same
-question about the largest RECTANGLE of good land and the state collapses: a
-rectangle ending at (i, j) needs both a width and a height, the two trade off
-against each other, and no single value per cell can capture it. The maximal
-rectangle problem is genuinely harder and needs a different technique (a stack
-over histogram heights, which is not a DP at all).
-
-So "the farmer only want to farm in a square" is not flavour text. It is the
-hypothesis that makes one number per cell sufficient.
-
-
-THE VIDEO'S OWN SOLUTION
-------------------------
-The candidate writes this, live, about 24 minutes in:
-
-        def largest_square(bin_array: list[list[int]]) -> int:
-            n = len(bin_array)
-            m = len(bin_array[0])
-            dp = ...
-            for i in range(n):
-                for j in range(m):
-                    if bin_array[i][j] == 0:
-                        continue
-                    left = right = diag = 0
-                    if i > 0: left = dp[i-1][j]
-                    if j > 0: right = dp[i][j-1]
-                    if (i > 0 and j > 0): diag = dp[i-1][j-1]
-
-                    dp[i][j] = min([left, right, diag]) + 1
-
-            rowwise_max = [max(row) for row in dp]
-            return max(rowwise_max)
-
-It is a mock interview, so this is work in progress rather than finished code --
-the point of reading it here is not to audit it. Two things in it are worth
-having.
-
-FIRST, it is independent confirmation of the recurrence. Somebody reasoning
-through the problem from scratch, on camera, arrives at min of the same three
-neighbours plus one. That is worth more than my own file agreeing with itself.
-
-SECOND, its edge handling is better than what this file had. Initialising the
-three neighbours to 0 and overwriting each only when it exists means a cell on
-the top row or the left column gets min(0, ...) + 1 = 1 with no special case at
-all. Section 2 now does it that way. The version I wrote first had a separate
-`if row == 0 or column == 0: side = 1` branch, which is two code paths where one
-will do, and the edge case is exactly where two paths tend to disagree.
-
-One difference kept deliberately: the names here are `diagonal`, `above` and
-`left`, because in the video `left` holds dp[i-1][j], which is the cell ABOVE,
-and `right` holds dp[i][j-1], which is the cell to the LEFT. That costs nothing
-while you are writing it and a great deal when you read it back a week later.
-
-The video's function also returns max(rowwise_max), the side length. The problem
-asks for the AREA, so this file squares it at the end -- see the note under the
-worked example.
-
-
-COMPLEXITY
-----------
-    time  O(n*m)   one pass, constant work per cell
-    space O(n*m)   for the table, or O(m) with a rolling row -- section 4
-
-Brute force, for comparison: try every top-left corner and every side length and
-check every cell of each candidate. That is O(n*m*min(n,m)^3) in the obvious
-form -- section 1, kept only to check the DP against.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_largest_square   every candidate square, checked cell by cell
     2. largest_square               the O(nm) DP
     3. locate_square                where the winning square actually is
@@ -200,14 +43,7 @@ DIAGONAL_TRAP_LAND = [
 # =====================================================================
 # 1. BRUTE FORCE -- every candidate square
 # =====================================================================
-# Follows the statement literally: for every top-left corner and every side
-# length that still fits on the grid, check whether every cell inside is good.
-#
-# top_row / left_column - the candidate's top-left corner
-# side                  - the candidate's side length
-#
-# Returns the best side length and where it was found, so the DP has something
-# independent to be checked against.
+# Notes: [[Farmer Problem — Code Notes#1. Brute force — every candidate square]] (variables)
 
 def brute_force_largest_square(land):
     row_count = len(land)
@@ -235,22 +71,7 @@ def brute_force_largest_square(land):
 # =====================================================================
 # 2. THE DP -- one number per cell
 # =====================================================================
-# land          - the matrix of 1s (good) and 0s (bad)
-# side          - the table; side[i][j] is the side length of the largest good
-#                 square whose BOTTOM-RIGHT corner is (i, j)
-# row, column   - the cell being filled on this pass
-#
-# Row 0 and column 0 are special only in that two of their neighbours are off
-# the grid: a square ending on the top row or left column can never be bigger
-# than 1. That is handled by the bounds check rather than by a separate
-# initialisation pass, so there is one code path.
-#
-# The loops run row-major, so all three neighbours -- up-left, up, left -- are
-# already final when they are read. The same "loop order is a topological order"
-# guarantee as ../Knight_Rewards/.
-#
-# Returns the AREA, because that is what the farmer asked for, plus the side and
-# the table for display and reconstruction.
+# Notes: [[Farmer Problem — Code Notes#2. The DP — one number per cell]] (variables, edges, loop order)
 
 def largest_square(land):
     row_count = len(land)
@@ -285,13 +106,7 @@ def largest_square(land):
 # =====================================================================
 # 3. WHERE THE SQUARE IS
 # =====================================================================
-# The table gives the area; the farmer also needs to know which field to plough.
-#
-# No walk-back is needed here, unlike the bunny and knight tracebacks: the
-# winning cell IS the bottom-right corner, and the side length is stored in it,
-# so the top-left corner is pure arithmetic.
-#
-# Ties are broken by taking the first maximum in row-major order.
+# Notes: [[Farmer Problem — Code Notes#3. Where the square is]]
 
 def locate_square(side_table, best_side):
     if best_side == 0:
@@ -308,16 +123,7 @@ def locate_square(side_table, best_side):
 # =====================================================================
 # 4. ONE ROW INSTEAD OF THE TABLE
 # =====================================================================
-# Each cell reads only the row above and the cell to its left, so the whole
-# table is never needed at once -- the same observation that shrinks Fibonacci
-# to two variables and subset sum to one row.
-#
-# previous_row     - the finished row above
-# current_row      - the row being built
-#
-# O(m) space instead of O(nm). As everywhere else in this collection, the price
-# is that the square can no longer be LOCATED afterwards, only measured -- the
-# table it would be found in has been thrown away.
+# Notes: [[Farmer Problem — Code Notes#4. One row instead of the table]] (variables)
 
 def largest_square_rolling(land):
     column_count = len(land[0])
@@ -555,62 +361,4 @@ print(f"  -- it is not a rare bug, it is wrong on roughly "
       f"{100 * diagonal_bug_caught // trial_count}% of random input")
 
 
-# === How it Runs ===
-#
-# --- largest_square ---
-# side is an n x m table of zeros, filled row by row, left to right. there is no
-# separate base case and no edge special-case: a bad cell is skipped, leaving the
-# 0 that was already there, and for a good cell any neighbour that is off the
-# grid counts as 0, so min(0, ...) + 1 = 1 for the whole top row and left column
-# without a branch (this is the video's idiom -- see the docstring)
-# every other cell reads exactly three already-final neighbours -- up-left, up,
-# left -- all of which row-major order has already visited
-# constant work per cell, so O(nm) in total
-#
-# filling the table for the video's land:
-#
-#     land                    side[i][j]
-#     0 1 1 0 1               0 1 1 0 1
-#     1 1 0 1 0               1 1 0 1 0
-#     0 1 1 1 0               0 1 1 1 0
-#     1 1 1 1 0               1 1 2 2 0
-#     1 1 1 1 1               1 2 2 3 1
-#     0 0 0 0 0               0 0 0 0 0
-#
-# row 0 and column 0 just copy the land: nothing bigger than 1 x 1 can end there
-# row 3 is where the first 2 appears. at (3,2):
-#     land is good; diagonal side[2][1] = 1, above side[2][2] = 1, left side[3][1] = 1
-#     1 + min(1, 1, 1) = 2   -- a 2 x 2 square of good land ends at (3,2)
-# row 4, cell (4,3) is the answer:
-#     diagonal side[3][2] = 2, above side[3][3] = 2, left side[4][2] = 2
-#     1 + min(2, 2, 2) = 3   -- a 3 x 3 square ends at (4,3)
-#     its top-left is (4-3+1, 3-3+1) = (2, 1), so rows 2-4, columns 1-3:
-#         1 1 1
-#         1 1 1
-#         1 1 1
-#     area = 3 * 3 = 9
-#
-# the very next cell, (4,4), drops straight back to 1 even though its land is
-# good: above is side[3][4] = 0, because the land at (3,4) is bad. one 0 in the
-# wrong place caps the corner completely. that is what taking the MIN means --
-# the most constrained direction decides, and no amount of room elsewhere helps
-#
-# --- why the answer is a maximum over the whole table ---
-# every square has exactly one bottom-right corner, so as the table is filled,
-# every possible square of good land is measured exactly once, at its own corner
-# there is no separate search: the largest entry in the table IS the answer, and
-# the scan for it is folded into the same pass
-#
-# --- locate_square ---
-# no walk-back is needed, unlike the bunny and knight tracebacks. the winning
-# cell is the bottom-right corner and it stores the side, so
-#     top-left = (row - side + 1, column - side + 1)
-# is the whole reconstruction. the recurrence stored enough to invert directly
-#
-# --- largest_square_rolling ---
-# the same thing with two rows instead of n: previous_row for the two upward
-# lookups, current_row for the leftward one
-# the diagonal is previous_row[column - 1] -- which must be read BEFORE
-# current_row[column - 1] overwrites nothing (they are separate lists here, so
-# unlike the subset sum row there is no ordering trap)
-# O(m) space, and the square can no longer be located, only measured
+# Notes: [[Farmer Problem — Code Notes#How it runs]] (the video's land, traced)

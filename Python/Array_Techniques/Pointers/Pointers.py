@@ -1,16 +1,9 @@
 """
 Standard pointer patterns — one pointer and two pointers.
 
-A "pointer" here is just an integer index into a list. What makes it a pointer
-pattern is the discipline: it only ever moves FORWARD (or, in pattern 3, the two
-only ever move TOWARD each other) and it is never reset. That is what turns work
-that looks nested into a single pass.
-
-The while-loop contract — check all three every time you write one:
-    1. INITIALISE   every pointer has a starting value before the loop
-    2. CONDITION    the test is about a variable the body actually changes
-    3. PROGRESS     every path through the body moves at least one pointer
-A loop that hangs has almost always broken rule 3.
+Notes: [[Pointers — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Pointers — Code Notes.md
 """
 
 
@@ -104,16 +97,7 @@ def find_pair_with_sum(sorted_values, target):
 # ============================================================================
 # PATTERN 4 — TWO POINTERS, two sorted VIEWS of the same data (a sweep line)
 # ============================================================================
-#
-# Patterns 2 and 3 walk lists that hold different things. This one walks the
-# SAME list twice: once sorted by when each interval opens, once sorted by when
-# each interval closes. Walking those two orders side by side replays every
-# open-event and close-event in chronological order, which is what lets a
-# running count of "how many are open right now" be kept in a single pass.
-#
-# Came from Practical 2 / Themis 2B: n bus licenses, each valid over a date
-# range, find the day on which the most licenses are simultaneously valid.
-# There it was called double_pointer(left, right).
+# Notes: [[Pointers — Code Notes#Pattern 4 — two pointers, two sorted views of the same data (a sweep line)]] (where it came from)
 
 # A license is a 3-field list. These constants name the fields, so that nothing
 # below ever reads a bare row[0] / row[1] / row[2] and leaves you guessing.
@@ -135,13 +119,7 @@ NAME_OF_COMPANY = 2          # unused here, listed so the layout is complete
 def busiest_day(licenses_sorted_by_start, licenses_sorted_by_expiry):
     """How many licenses are valid at once on the busiest day, and which day that is.
 
-    Both arguments are the same list of licenses, sorted two different ways:
-        licenses_sorted_by_start   ascending by DATE_LICENSE_STARTS
-        licenses_sorted_by_expiry  ascending by DATE_LICENSE_EXPIRES
-
-    Returns (most_licenses_valid_at_once, date_of_busiest_day). If several days
-    tie, the earliest one is returned, because a later tie is not strictly
-    greater than the best seen so far.
+    Notes: [[Pointers — Code Notes#busiest_day]]
     """
     # The variables
     #   index_of_next_license_to_start   position in the by-start view: the next
@@ -211,68 +189,7 @@ def licenses_valid_on(licenses, date):
     return sorted(names_of_companies_valid_on_that_day)
 
 
-# === How it Runs ===
-# --- count_below (one pointer) ---
-# the for loop walks the queries; value_cursor walks the values and NEVER resets between queries
-# the while advances value_cursor past every value smaller than the current query, then stops
-# whatever value_cursor is at that moment IS the answer, because it counts exactly the values already passed
-# the two guards in the while matter in this order: bounds first, then the comparison,
-#   because Python stops at the first false test and would otherwise index off the end
-#
-# trace on sorted_values = [10, 20, 30, 40], sorted_queries = [15, 25, 100]:
-#   query 15 : cursor 0 -> 10 < 15 so cursor 1 -> 20 < 15 is false, stop.  counts [1]
-#   query 25 : cursor 1 -> 20 < 25 so cursor 2 -> 30 < 25 is false, stop.  counts [1, 2]
-#   query 100: cursor 2 -> 30 < 100 so 3 -> 40 < 100 so 4 -> out of range. counts [1, 2, 4]
-#   cursor moved 0 -> 4 in total across all three queries, not 4 times over
-#
-# --- merge_sorted (two pointers, two lists) ---
-# both pointers start at 0 and the loop runs while BOTH lists still have items left
-# compare the two front items, take the smaller, advance only that side
-# when either side runs out the loop ends and the remainder of the other is appended whole - no comparisons needed
-#
-# trace on left = [2, 4, 5], right = [1, 3, 6]:
-#   left[0]=2 vs right[0]=1 -> take 1, right_index 1     merged [1]
-#   left[0]=2 vs right[1]=3 -> take 2, left_index  1     merged [1, 2]
-#   left[1]=4 vs right[1]=3 -> take 3, right_index 2     merged [1, 2, 3]
-#   left[1]=4 vs right[2]=6 -> take 4, left_index  2     merged [1, 2, 3, 4]
-#   left[2]=5 vs right[2]=6 -> take 5, left_index  3     merged [1, 2, 3, 4, 5]
-#   left_index 3 == len(left), loop ends, extend with right[2:] = [6]
-#                                                        merged [1, 2, 3, 4, 5, 6]
-#
-# --- find_pair_with_sum (two pointers, one list, converging) ---
-# low_index starts at the smallest value, high_index at the largest
-# each comparison rules out one value forever, so the gap only ever narrows - that is the progress guarantee
-# the loop ends when they meet, which is at most len(sorted_values) steps
-#
-# trace on sorted_values = [1, 3, 4, 6, 8, 11], target = 10:
-#   low 0 (1)  + high 5 (11) = 12 > 10 -> high 4
-#   low 0 (1)  + high 4 (8)  =  9 < 10 -> low  1
-#   low 1 (3)  + high 4 (8)  = 11 > 10 -> high 3
-#   low 1 (3)  + high 3 (6)  =  9 < 10 -> low  2
-#   low 2 (4)  + high 3 (6)  = 10 == 10 -> return (2, 3)
-#
-# --- busiest_day (two pointers, two sorted views of one list) ---
-# the same licenses are sorted twice: by start date, and by expiry date
-# the by-start pointer plays every "a license opens" event, the by-expiry pointer every "one closes"
-# whichever of the two dates under the pointers is EARLIER is the next thing to happen in time,
-#   so each turn compares those two dates and advances only the side that just fired
-# opening -> count up and maybe a new record; closing -> count down, never a record
-# the loop stops when the by-start side runs out, because only openings can set a record
-#
-# trace on the four licenses of Themis 2B, as yyyymmdd:
-#   by start : Hector 20241221 | SuperBus 20250101 | UltraBus++ 20250103 | Buzzzer 20250105
-#   by expiry: Hector 20250102 | UltraBus++ 20250107 | Buzzzer 20250109 | SuperBus 20250110
-#
-#   starts 20241221 < expires 20250102 -> open,  count 1, RECORD 1 on 20241221, start_idx 1
-#   starts 20250101 < expires 20250102 -> open,  count 2, RECORD 2 on 20250101, start_idx 2
-#   starts 20250103 < expires 20250102 -> false: close, count 1,                expiry_idx 1
-#   starts 20250103 < expires 20250107 -> open,  count 2, not > 2, no record,    start_idx 3
-#   starts 20250105 < expires 20250107 -> open,  count 3, RECORD 3 on 20250105,  start_idx 4
-#   start_idx 4 == len, loop ends -> returns (3, 20250105) = 05.01.2025, three buses
-#
-#   note the third line: 20250103 is NOT < 20250102, so the expiry wins the tie of "what
-#   happens next" and Hector's license is retired before UltraBus++ is counted. Get that
-#   comparison backwards and the count drifts upward and never comes back down.
+# Notes: [[Pointers — Code Notes#How it runs]] (traces of all four functions)
 
 
 print(count_below([10, 20, 30, 40], [15, 25, 100]))  # [1, 2, 4] — cursor ends at 4, having moved forward only

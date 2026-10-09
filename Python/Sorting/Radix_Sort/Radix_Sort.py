@@ -1,96 +1,12 @@
 r"""
 RADIX SORT -- digit by digit, least significant first, with a STABLE sort
-=========================================================================
+Lecture 6-7 (Ivan Bliznets), slides 41-44; CLRS 3rd ed., section 8.3 (p. 198).
 
-Advanced Algorithms, Lecture 6-7 (Ivan Bliznets), slides 41-44. Also CLRS 3rd
-ed., section 8.3 (RADIX-SORT, p. 198). Builds on ../Counting_Sort/
-Counting_Sort.py; the per-digit counting sort is repeated here so this file
-runs on its own.
+Notes: [[Radix Sort — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Radix Sort — Code Notes.md
 
-    Some magic [slide 41]
-        Initial    Sorted by        Sorted by       Sorted by
-        array      1-st digit       2-nd digit      3-rd digit
-                   (last)
-         843         761              101             101
-         761         101              901             112
-         112         901              303             303
-         101         112              605             605
-         303         843              112             761
-         605         303              843             843
-         901         605              761             901
-
-    Radix sort [slide 42]
-        Arrays with n integers that have d digits in the k-numeral system can
-        be sorted in O(d(n + k)) time.
-
-        RADIX-SORT(A, d)
-          for i in {1, .., d} do
-              sort array A using i-th digit as a key using stable sorting
-          end for
-        Here, we numerate the digits from the least significant digits. This is
-        very important.
-
-"k-numeral system" means base k: decimal is k = 10, binary is k = 2. This file
-calls it `base`, and d is `digit_count`.
-
-The magic is in the first column: sorting by the LAST digit first looks
-backwards. It works because each later pass is stable. Look at the third pass:
-101 and 112 both have first digit 1, so that pass treats them as equal and
-leaves them in the order the second pass left them -- and the second pass had
-already put 101 before 112, because 0 < 1 in the middle digit.
-
-
-WHY IT WORKS [slide 43]
------------------------
-    - After the i-th sorting, the numbers created by the last i digits are in
-      increasing order.
-    - Base of induction for i = 1 is clear.
-    - If new numbers are different by the i+1 digit then they are in the right
-      order [as] we sort by the [(i+1)]-th digit.
-    - If [(i+1)]-th digits are equal then result follows from the fact that
-      sorting is stable and induction assumption.
-
-(Slide 43 writes "i-th" in the last two bullets; the digit being sorted in the
-step is the (i+1)-th.)
-
-The two cases of the induction step are the whole story:
-    the new digits DIFFER  -> this pass puts them in order by itself
-    the new digits are EQUAL -> this pass must keep the order the earlier passes
-                                built. That is exactly what "stable" means.
-Without stability the second case fails. Section 4 runs radix sort with an
-unstable counting sort and shows the wrong output.
-
-
-WHY LEAST SIGNIFICANT FIRST [slide 44]
---------------------------------------
-    Initial    Sorted by        Sorted by       Sorted by
-    array      leading digit    2-nd digit      1-rd digit     <- slide typo: "last digit"
-     843         112              101             101
-     761         101              303             901
-     112         303              605             761
-     101         605              901             112
-     303         761              112             303
-     605         843              843             843
-     901         901              761             605           <- NOT sorted
-
-Same stable sort, opposite digit order. Each pass is stable, so the LAST pass
-has the final say, and the last pass looks at the least important digit. The
-result is sorted by the last digit, with ties broken by the middle one. The
-most important digit must be sorted LAST.
-
-
-RUNNING TIME [slide 42; CLRS Lemma 8.3]
----------------------------------------
-    d passes, each a counting sort on n numbers with keys 0..base-1
-    each pass O(n + base), total O(d(n + base))
-
-With d constant and base = O(n) that is O(n), below the n log n comparison
-bound of slide 37 -- for the same reason counting sort is: digits are used as
-indexes, not compared.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. digit_of                  one digit of a number in a given base
     2. counting_sort_by_digit    the stable pass, plus an unstable variant
     3. radix_sort                slide 42 / CLRS p. 198
@@ -107,14 +23,7 @@ import random
 # =====================================================================
 # 1. ONE DIGIT
 # =====================================================================
-# number: a non-negative integer
-# digit_index: 0 for the last (least significant) digit, 1 for the one
-#              before it, and so on
-# base: the k of slide 42
-#
-# Example in base 10: digit_of(843, 0) = 3, digit_of(843, 1) = 4,
-# digit_of(843, 2) = 8. Integer-divide to drop the digits on the right, then
-# take the remainder to drop the digits on the left.
+# Notes: [[Radix Sort — Code Notes#1. One digit]] (variables, example)
 
 def digit_of(number, digit_index, base=10):
     return (number // base ** digit_index) % base
@@ -131,17 +40,7 @@ def digit_count_of(largest, base=10):
 # =====================================================================
 # 2. COUNTING SORT ON ONE DIGIT [slide 40; CLRS 8.2]
 # =====================================================================
-# values: the numbers to sort; not changed, a new list is returned
-# digit_index, base: which digit is the key
-# backwards: True = the slide 40 stable pass. False = the same loop run
-#            forwards, which reverses equal keys: sorted by this digit, but
-#            NOT stable. Only section 4 uses False.
-# counts: after counting, counts[digit] = how many have that digit; after the
-#         running totals, how many have a digit <= it
-# output: the result list
-#
-# See ../Counting_Sort/Counting_Sort.py for the full explanation, including why
-# the decrement comes before the placement in 0-indexed code.
+# Notes: [[Radix Sort — Code Notes#2. Counting sort on one digit]] (variables)
 
 def counting_sort_by_digit(values, digit_index, base=10, backwards=True):
     counts = [0] * base
@@ -162,19 +61,11 @@ def counting_sort_by_digit(values, digit_index, base=10, backwards=True):
 # =====================================================================
 # 3. RADIX SORT [slide 42; CLRS 8.3, p. 198]
 # =====================================================================
-# values: non-negative integers; not changed, a new list is returned
-# base: the k of slide 42, 10 unless given
-# digit_count: d, the number of digits of the largest value
-# digit_index: the digit sorted in this pass, 0 = least significant
-# stable: False swaps in the unstable pass, for section 4 only
-# show: print the list after every pass, the way slide 41 lays it out
-#
 #     RADIX-SORT(A, d)
 #     1 for i = 1 to d
 #     2     use a stable sort to sort array A on digit i
 #
-# Shorter numbers simply have 0 in their high digits (7 is 007), so no padding
-# is needed.
+# Notes: [[Radix Sort — Code Notes#3. Radix sort]] (variables, short numbers)
 
 def radix_sort(values, base=10, stable=True, show=False):
     if not values:

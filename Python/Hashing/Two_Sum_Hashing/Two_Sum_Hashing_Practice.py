@@ -1,21 +1,10 @@
 r"""
 2-SUM VIA HASHING -- PRACTICE
-=============================
+Advanced Algorithms, Lecture 9, slide 5.
 
-Write it yourself here. Two_Sum_Hashing.py, next to this file, is the answer
-to compare with afterwards.
-
-THE PROBLEM [Lecture 9, slide 5]
-    Input:   two arrays of positive integers, left_array and right_array,
-             and a number target.
-    Output:  a pair (left_value, right_value) with
-             left_value + right_value == target, or None if there is none.
-
-THE RULES
-    - Build your own hash table with chaining: a list of lists. No Python
-      set or dict, or the exercise is one line.
-    - Run this file. Every test prints PASS, FAIL or NOT WRITTEN YET.
-      Brute force is the reference.
+Notes: [[Two Sum Hashing Practice — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Two Sum Hashing Practice — Code Notes.md
 
 Run with:
     python3 Two_Sum_Hashing_Practice.py

@@ -1,31 +1,10 @@
 """
 2-SUM
-=====
+Advanced Algorithms, Lecture 1.
 
-The question:
-    Given two arrays and a target number, is there one value from the FIRST array
-    and one value from the SECOND array that add up to the target?
-
-    left_array  = [2, 7, 11, 15]
-    right_array = [1, 3, 6, 9]
-    target      = 20                 ->  11 + 9 = 20   ->  Yes
-
-Note this is the TWO-ARRAY version, which is the one from Lecture 1 of Advanced
-Algorithms. You take one value from each array, so there is no "don't use the same
-element twice" rule to worry about. The one-array version (find two entries of a
-single array that add to the target) needs that extra check.
-
-Three ways to do it:
-
-    brute force      O(n^2)        check every pair
-    binary search    O(n log n)    sort one array, then look up target - value
-    two pointers     O(n log n)    sort both, walk inward from opposite ends
-                                   (the sort is the expensive part -- the walk
-                                    itself is only O(n))
-
-Two pointers is the one to reach for when memory is tight, because it needs two
-integer indices and nothing else. There is also a hash-set version that is O(n)
-time, but it costs O(n) extra memory, which a small memory limit will not allow.
+Notes: [[2-SUM — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/2-SUM — Code Notes.md
 
 Run with:
     python3 2_Sum.py
@@ -53,34 +32,7 @@ def brute_force(left_array, right_array, target):
 # =====================================================================
 # 2. TWO POINTERS -- the fast version
 # =====================================================================
-# Both arrays get sorted first. Then put one index at the LOW end of the left
-# array and one at the HIGH end of the right array, and walk them toward
-# each other.
-#
-# At every step there are only three possibilities:
-#
-#     sum == target   ->  found it, stop
-#     sum <  target   ->  too small, so move to a BIGGER left value
-#     sum >  target   ->  too big,   so move to a SMALLER right value
-#
-# WHY THROWING A VALUE AWAY IS SAFE (this is the part that matters):
-#
-#     Say the sum is too small, and right_high_index is sitting on the LARGEST
-#     remaining right value. That is the biggest partner this left value will
-#     ever be offered. If even that is not enough to reach the target, then no
-#     smaller right value will be either -- so this left value cannot be part
-#     of any answer at all, and dropping it loses nothing.
-#
-#     Same logic mirrored for "too big": the left value is the smallest one
-#     left, so if the sum overshoots, this right value is too big for every
-#     left value still available. Drop it.
-#
-# That is why the walk is O(n) and not O(n^2): each step eliminates a whole
-# ROW or COLUMN of the n x n grid of pairs, not a single pair.
-#
-# left_low_index only ever goes up and right_high_index only ever goes down --
-# neither turns around, so between them they take at most 2n steps before one
-# runs off its end.
+# Notes: [[2-SUM — Code Notes#2. Two pointers — the fast version]] (why throwing a value away is safe)
 
 def two_pointers(left_array, right_array, target):
     left_sorted  = sorted(left_array)

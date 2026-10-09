@@ -1,118 +1,12 @@
 r"""
 HASH TABLE WITH CHAINING
-========================
+Advanced Algorithms, Lecture 9 "Hashtables", slides 3-23; CLRS 3rd ed., 11.2-11.3 (pp. 256-268).
 
-Advanced Algorithms, Lecture 9 "Hashtables" (Ivan Bliznets), slides 3-4 and
-11-23. CLRS 3rd ed., 11.2 (chaining, p. 256-260) and 11.3 (hash functions,
-p. 262-268).
+Notes: [[Hash Table — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Hash Table — Code Notes.md
 
-
-WHAT IT IS FOR [slides 3-4]
----------------------------
-    Associative array (map, symbol table, or dictionary) is an abstract data
-    type that stores a collection of (key, value) pairs, such that each
-    possible key appears at most once in the collection.
-
-    The following operations are often supported: SEARCH, INSERT, DELETE.
-
-                    Operation    List     Tree         Hashtable
-                      Search     O(n)    O(log n)   O(1) on average
-                     Deletion    O(n)    O(log n)   O(1) on average
-                      Insert     O(1)    O(log n)   O(1) on average
-
-Python's dict is one of these (slide 4). This file builds one by hand.
-
-
-THE IDEA [slide 12]
--------------------
-Turn the key into an array index with a function h, then jump straight to that
-cell. No binary search, so no log n.
-
-    Unfortunately, by Pigeonhole principle there is no single function that
-    works for all X subset of {1, 2, ..., U} if U > M.
-
-More possible keys than cells means two keys must share a cell. That is a
-COLLISION. You cannot avoid collisions. You can only handle them.
-
-
-CHAINING [slide 14]
--------------------
-    Goal: store set X such that X subset of {1, 2, ... U} and |X| ~ n.
-      - Create an array of length m = O(n) that initially contains empty lists
-      - Take prime number p > U
-      - Generate two random integer numbers 0 < a < p, 0 <= b < p
-      - Search, Insert, Delete x: compute value i = ((ax + b) mod p) mod m
-      - After that perform operation on the list with index i.
-
-So each cell (a "bucket" or "slot") holds a LIST of every key that landed there.
-Two keys that collide just sit in the same list. Every operation is:
-
-    1. compute the slot index from the key      O(1)
-    2. walk that one list                       O(length of that list)
-
-CLRS draws the lists as linked lists (Figure 11.3, p. 257). This file uses
-Python lists. The idea is the same.
-
-
-HOW LONG ARE THE LISTS? [slide 17; CLRS p. 258-260]
----------------------------------------------------
-CLRS calls n/m the LOAD FACTOR, alpha: keys stored divided by slots.
-
-    For a fixed xi on average at most n/m elements of the set X end up in the
-    same list as xi.
-    Hence, to find a particular element we need to spend O(n/m + 1) time on
-    average.
-
-CLRS Theorems 11.1 and 11.2 say the same: Theta(1 + alpha). Keep m = O(n) and
-alpha stays a constant, so every operation is O(1) on average.
-
-Slide 18 warns: this is about the AVERAGE list. It does not promise the
-LONGEST list is short.
-
-
-THE TWO HASH FUNCTIONS IN THIS FILE
------------------------------------
-    DIVISION METHOD [slide 9, slide 20; CLRS 11.3.1, p. 263]
-        h(x) = x mod m
-    The lecture's worked example uses h(x) = x mod 7. Slide 20 explains why it
-    is risky: the keys 1, m+1, 2m+1, ... all give remainder 1, so they all land
-    in ONE list. Section 6 shows this happening.
-
-    UNIVERSAL HASHING [slides 14-16, 20, 23; CLRS 11.3.3, p. 265-268]
-        h(x) = ((a*x + b) mod p) mod m,   0 < a < p,  0 <= b < p,  p prime > U
-    The lecture's own construction (slide 14). a and b are drawn at random when
-    the table is created. Then no fixed set of keys is bad for every choice.
-
-    Claim [slide 15]: Any x, y < U such that x != y end up in the same list
-    with probability 1/m.
-
-    CLRS Theorem 11.5 (p. 267) proves the same family is "universal".
-    Section 7 checks the claim exactly, over every possible (a, b).
-
-    Slide 23: "After you create an instance of a hashtable you should not
-    change values of a, b or your hash function for this table!" Change them
-    and every stored key is now in the wrong list.
-
-
-ON RESIZING
------------
-Neither the lecture nor CLRS 11.2-11.3 resizes a hash table. Both simply take
-m = O(n) up front. Growing a table (CLRS 17.4, "dynamic tables") would need a
-NEW m, so a NEW hash function, so every key moved. That is the one moment
-slide 23's rule is broken on purpose. It is not built here.
-
-
-SLIDE NOTES
------------
-    Slide 15 writes "((yx + b) mod p)" twice. It means (ay + b) mod p.
-    Slide 15 says "x, y < U" while slide 14 has keys up to U. Either way they
-    must be below p, which is what matters.
-    Slide 16 writes "probability close to 1/m". CLRS Theorem 11.5 shows it is
-    at most 1/m. Section 7 counts it: never above 1/m.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. division_hash             h(x) = x mod m                [slide 9, 20]
     2. draw_universal_hash       h(x) = ((ax + b) mod p) mod m [slide 14]
     3. ChainedHashTable          insert, search, delete        [slide 14]
@@ -153,16 +47,7 @@ def division_hash(slot_count):
 # =====================================================================
 # 2. UNIVERSAL HASHING [slide 14; CLRS 11.3.3]
 # =====================================================================
-# Draws ONE random function from the family ((a*x + b) mod p) mod m.
-#
-# slot_count: m, how many lists the table has
-# universe_limit: U, the largest key that will ever be hashed
-# prime: p, a prime bigger than U
-# multiplier: a, random, 0 < a < p
-# offset: b, random, 0 <= b < p
-#
-# The draw happens once, here. The returned function then never changes
-# (slide 23). Different draws give different functions, which is the point.
+# Notes: [[Hash Table — Code Notes#2. Universal hashing]] (variables)
 
 def is_prime(number):
     if number < 2:
@@ -198,21 +83,7 @@ def draw_universal_hash(slot_count, universe_limit, random_generator=random):
 # =====================================================================
 # 3. THE TABLE [slide 14; CLRS 11.2]
 # =====================================================================
-# buckets: the array of m lists; buckets[index] holds (key, value) pairs
-# hash_function: the function chosen at creation; fixed for life (slide 23)
-# item_count: n, how many keys are stored right now
-#
-# Every method does the same two steps:
-#     slot_index = hash_function(key)   -> which list
-#     walk buckets[slot_index]          -> find the key in that list
-#
-# insert checks for the key first, so a key appears at most once (slide 3's
-# definition). CLRS's CHAINED-HASH-INSERT skips that check to stay O(1) worst
-# case (p. 258). Here an existing key just gets its value overwritten, like a
-# Python dict.
-#
-# Time for each operation: O(1 + length of that list).
-# On average that is O(1 + n/m) [slide 17].
+# Notes: [[Hash Table — Code Notes#3. The table]] (variables, the two steps, cost)
 
 class ChainedHashTable:
     def __init__(self, slot_count, hash_function):
@@ -428,17 +299,7 @@ check("random (a, b) spreads them (longest list well under 30)",
 # =====================================================================
 # 7. SLIDE 15's CLAIM, COUNTED EXACTLY
 # =====================================================================
-# "Any x, y < U such that x != y end up in the same list with probability 1/m."
-#
-# For a small prime the whole family can be listed: every a in 1..p-1, every
-# b in 0..p-1, which is p(p-1) functions (slide 15). For each pair of keys,
-# count the functions that send both to the same list.
-#
-# prime: p
-# slot_count: m
-# worst_fraction: the highest collision rate found over all key pairs
-#
-# CLRS Theorem 11.5 says it is never more than 1/m.
+# Notes: [[Hash Table — Code Notes#7. Slide 15's claim, counted exactly]] (variables)
 
 print("\n" + "=" * 78)
 print("SLIDE 15: Pr[x and y collide] over every (a, b)")

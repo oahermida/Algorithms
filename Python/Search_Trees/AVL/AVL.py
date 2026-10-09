@@ -1,143 +1,12 @@
 r"""
 AVL TREE
-========
+Lecture 8, slides 14-29; CLRS 3rd ed., Problem 13-3 (p. 333).
 
-Advanced Algorithms, Lecture 8 (Ivan Bliznets), slides 14-29. Built on the plain
-search tree from ../BST/BST.py and the rotations from ../Rotations/Rotations.py.
-CLRS only has AVL trees as a problem at the end of chapter 13 (Problem 13-3,
-3rd ed. p. 333), so the lecture is the main source here.
+Notes: [[AVL — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/AVL — Code Notes.md
 
-
-THE PROBLEM [slide 14]
-----------------------
-    Deletions and Insertions can make our binary tree disbalanced.
-
-Insert 1, 2, 3, ..., n into a plain BST and you get a path of height n - 1.
-Every operation is O(h), so that is O(n). An AVL tree keeps h = O(log n).
-
-
-THE DEFINITION [slide 15]
--------------------------
-    - h(v) is the height of vertex v, i.e., the longest path from v to a leaf.
-    - We say that the height of an empty tree is undefined.
-    - AVL tree: self-balancing binary search tree such that for each vertex v
-      and its two children u1, u2 we have
-                    h(u1) - h(u2) in {-1, 0, 1}.
-    - dis_T(v) = h(u1) - h(u2) is the disbalance at vertex v in a tree T.
-
-Two conventions this file fixes:
-    HEIGHT counts edges, so a leaf has height 0 (slide 17 confirms it: n0 = 1,
-    a single node is a tree of height 0). The slide leaves the empty tree's
-    height undefined; this file uses -1 so that "1 + max of the children"
-    works everywhere. With -1, a node with one leaf child and no other child
-    has disbalance 0 - (-1) = 1, which is allowed, as it should be.
-    DISBALANCE is LEFT minus RIGHT. Slide 24 takes u1 as the left child
-    ("WLOG assume h(u1) - h(u2) = 2" with u1 drawn on the left). So +2 means
-    "too tall on the left" and -2 "too tall on the right".
-
-Every node STORES its height, so checking a disbalance is O(1) instead of a
-walk down the whole subtree. The price is that heights must be refreshed on the
-way back up after every insert, delete and rotation.
-
-
-THE HEIGHT BOUND [slide 17]
----------------------------
-    Theorem. If an AVL tree T contains n elements, then the height of the tree
-    is O(log n).
-    - We prove that if AVL T has height h, then T has at least sqrt(2)^h
-      vertices.
-    - Let n_i be the smallest number of vertices that an AVL-tree of height i
-      can contain.
-    - Clearly n_0 = 1, n_1 = 2.
-    - If tree has height i + 1 then at least one of its subtrees has height i.
-    - Hence, the second subtree has a height of size at least i - 1, as we are
-      working with an AVL tree.
-    - Therefore, we have
-          n_(i+1) >= 1 + n_i + n_(i-1) > 2 n_(i-1) >= 2 sqrt(2)^(i-1) = sqrt(2)^(i+1).
-    - It follows that h <= log_sqrt(2) n.
-
-(The slide's first bullet prints the exponent as n; it means h, the height.)
-
-The recurrence n_(i+1) = 1 + n_i + n_(i-1) is Fibonacci plus one:
-n_i = F(i + 3) - 1, with F(1) = F(2) = 1. Section 7 prints the table and
-builds each smallest tree to show it really is that small.
-
-log_sqrt(2) n = 2 log2 n. The slide's bound is deliberately loose; the
-Fibonacci growth rate gives the sharper h < 1.44 log2(n + 2) (CLRS Problem
-13-3 asks for this one). Both are O(log n), which is all the theorem needs.
-
-
-INSERTION [slides 23-26]
-------------------------
-    - Insertion of one element can increase height of some subtrees at most by
-      one.
-    - Our idea: insert or delete as before and then try to fix potential
-      disbalances by rotations and make tree balanced again.
-    - Only the vertices on the path from v to the root can increase their
-      height.
-    - Going up from v to the root find the deepest vertex that violates
-      disbalance constraint, i.e. such vertex x with children u1, u2 such that
-      |h(u1) - h(u2)| = 2.
-    - WLOG assume h(u1) - h(u2) = 2.  Two cases:
-        1. h_T'(A) = h - 1 and h_T'(B) = h - 2,
-        2. h_T'(A) = h - 2 and h_T'(B) = h - 1.
-
-where A and B are u1's left and right subtrees. In this file's names:
-
-    case I  [slide 25] = LL: A, the OUTER grandchild subtree, grew.
-                         One right rotation at x.
-
-                 x                     u1
-                / \                   /  \
-              u1   C     =>          A    x
-             /  \                        / \
-            A    B                      B   C
-
-    case II [slide 26] = LR: B, the INNER grandchild subtree, grew.
-                         Split B as z with subtrees B1, B2. Left rotation at
-                         u1, then right rotation at x. z ends up on top.
-
-                 x                  x                     z
-                / \                / \                  /   \
-              u1   C    =>        z   C     =>        u1     x
-             /  \                / \                 /  \   / \
-            A    z             u1   B2              A  B1  B2  C
-                / \           /  \
-              B1   B2        A    B1
-
-    RR and RL are the mirror images (h(u1) - h(u2) = -2), the "WLOG" half the
-    slide does not draw.
-
-Why one rotation is not enough in case II: a right rotation at x would hang B
-under x on the right, at the same depth it was, and the tree would lean just as
-far the other way. Slide 22's guarantee needs A to be the tallest, which is
-exactly case I. The first rotation in case II turns it into case I.
-
-After an insertion's fix, the subtree has the same height it had BEFORE the
-insertion, so nothing above it can be out of balance. One fix (one single or
-one double rotation) per insertion is enough.
-
-
-DELETION [slides 23, 27-29]
----------------------------
-    - Similarly, deletion of one element can decrease height of some vertices
-      at most by one.
-
-Slides 27-29 are titled "Deletion I-III" but are blank in the PDF; the
-material was done live. This file follows slide 23's plan: delete as in a
-plain BST (copy-the-successor, slides 11-13), then walk back up fixing every
-node that has disbalance +2 or -2 with the same four cases.
-
-Two differences from insertion:
-    - The child on the tall side can have disbalance 0, which insertion never
-      produces. Then a SINGLE rotation is right (treat it as LL or RR). A
-      double rotation there would leave the tree unbalanced.
-    - A fix can shrink the subtree, so the node above may now be out of
-      balance. Deletion may need a fix at every level, O(log n) rotations.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. AvlNode, with a stored height
     2. height helpers and the rotations, keeping heights right
     3. rebalance: the four cases                     [slides 24-26]
@@ -220,16 +89,7 @@ def rotate_left(old_top):
 # =====================================================================
 # 3. REBALANCE: THE FOUR CASES [slides 24-26]
 # =====================================================================
-# node: the slide's x, a node whose children's heights may differ by 2
-# tall_child: the slide's u1, the child on the taller side
-#
-#   dis(x) = +2, dis(u1) >= 0  -> LL, case I:  right rotation at x
-#   dis(x) = +2, dis(u1) <  0  -> LR, case II: left at u1, then right at x
-#   dis(x) = -2, dis(u1) <= 0  -> RR, mirror of case I:  left rotation at x
-#   dis(x) = -2, dis(u1) >  0  -> RL, mirror of case II: right at u1, then left at x
-#
-# The ">= 0" / "<= 0" include 0 for deletion's sake (see the docstring).
-# Returns the new top of this subtree, which the caller hangs back in place.
+# Notes: [[AVL — Code Notes#3. Rebalance — the four cases]] (variables, the case table)
 
 def rebalance(node):
     update_height(node)
@@ -259,14 +119,7 @@ def rebalance(node):
 # =====================================================================
 # 4. INSERT [slides 23-26]
 # =====================================================================
-# node: the root of the subtree the key goes into
-#
-# Plain recursive BST insert (slide 9's shape), and on the way back up every
-# node on the path gets its height refreshed and is rebalanced if needed. The
-# deepest bad node is met first, as slide 24 says, because the recursion
-# unwinds from the bottom.
-#
-# O(log n): one walk down, one walk up.
+# Notes: [[AVL — Code Notes#4. Insert]] (variables, why the deepest bad node comes first)
 
 def insert(node, key):
     if node is None:
@@ -283,17 +136,7 @@ def insert(node, key):
 # =====================================================================
 # 5. DELETE [slides 11-13 then 23]
 # =====================================================================
-# node: the root of the subtree the key is deleted from
-# heir: the in-order successor, used when the node has two children
-#
-# The three BST cases from slides 11-13:
-#   leaf or one child -> return the other child (None for a leaf)
-#   two children      -> copy the successor's key up (slide 13), then delete
-#                        the successor's key from the right subtree
-# Then rebalance on the way back up. Unlike insert, more than one node on the
-# path may need a fix.
-#
-# O(log n).
+# Notes: [[AVL — Code Notes#5. Delete]] (variables, the BST cases)
 
 def delete(node, key):
     if node is None:
@@ -360,14 +203,7 @@ def count_nodes(node):
 # =====================================================================
 # 7. THE HEIGHT BOUND [slide 17]
 # =====================================================================
-# minimum_node_counts(top_height): n_0 .. n_top_height from the slide's
-#   recurrence n_(i+1) = 1 + n_i + n_(i-1), with n_0 = 1, n_1 = 2.
-#
-# build_minimal_avl(tree_height): the smallest AVL tree of that height. Its
-#   root has one child of height h - 1 and one of height h - 2, each also
-#   minimal: exactly the two subtrees the slide's argument uses. Keys are
-#   handed out in in-order so the result is a valid BST.
-#   next_key: a one-element list, so the recursion can advance the counter
+# Notes: [[AVL — Code Notes#7. The height bound]] (minimum_node_counts, build_minimal_avl)
 
 def minimum_node_counts(top_height):
     counts = [1, 2]

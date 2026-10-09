@@ -1,86 +1,12 @@
 """
 3-SUM
-=====
+Advanced Algorithms, Lecture 1 (Ivan Bliznets), slides 18-22.
 
-Advanced Algorithms, Lecture 1 (Ivan Bliznets), slides 18-22. It builds
-directly on 2-SUM (slides 16-17), which lives next door in ../2_SUM/2_Sum.py.
+Notes: [[3-SUM — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/3-SUM — Code Notes.md
 
-    3-SUM PROBLEM [slide 18]
-        Input:     Three arrays of numbers A, B, C of length n, number s.
-        Question:  Are there i, j, k such that A[i] + B[j] + C[k] = s?
-
-        Example:   A = [1, 2, 15, 18, -10, 7]
-                   B = [54, 12, 23, 11, -21, 0]
-                   C = [11, -100, 15, 19, 6]
-                   s = 20     ->  'Yes' as 20 = 2 + 12 + 6
-                   s = 1000   ->  'No'                         [slide 19]
-
-Like 2-SUM on these slides, it is the THREE-ARRAY version. One value comes
-from each array. So there is no "don't reuse the same element" rule.
-
-
-THE THREE ALGORITHMS
---------------------
-    "Trivial algorithm: O(n^3)."                                [slide 19]
-
-    "For each i in 0, 1, ..., n-1 solve 2-SUM PROBLEM with arrays B, C and
-     target sum s - A[i].  Running time O(n^2 log n)."          [slide 20]
-
-    "Can we do better?  Sort arrays B, C.  Now we need to solve 2-SUM PROBLEM
-     for ordered arrays!"                                       [slide 20]
-    "We presented algorithm with running time O(n^2)."          [slide 22]
-
-The idea in one line: fix the value from A. What is left is a 2-SUM problem
-on B and C, with target s - A[i]. Then use the best 2-SUM you know.
-
-    2-SUM by binary search costs  O(n log n)  ->  n times that = O(n^2 log n)
-    2-SUM by two pointers costs   O(n)        ->  n times that = O(n^2)
-
-The trick for O(n^2) is to sort B and C ONCE, before the loop over A.
-Sorting inside the loop would put the log n straight back.
-
-
-THE SLIDE 21 PSEUDOCODE HAS TYPOS
----------------------------------
-Slide 21, verbatim:
-
-    j <- 0, k <- n - 1
-    while i = 0, ..., n - 2 do
-        if |B[j] + C[k]| == s : then
-            return 'Yes'
-        end if
-        if |B[j] + C[k]| < s : then
-            j++
-        end if
-        if |B[j] + C[k]| == s : then
-            k--
-        end if
-    end while
-    return 'No'
-
-Four things to fix before it works:
-
-    1. "while i = 0, ..., n-2" mixes up a for-loop and a while-loop. What is
-       meant is: keep going while j < n and k >= 0.
-    2. The |...| bars are not absolute values. Taken literally, -5 would match
-       s = 5. They should just be B[j] + C[k].
-    3. The third test says "== s". It must be "> s": too big, so step k down.
-    4. The three ifs should be if / elif / else. Otherwise j++ happens and the
-       next test reads the NEW j in the same round.
-
-Section 3 below is the corrected version.
-
-
-HOW THIS DIFFERS FROM CLRS
---------------------------
-CLRS (3rd ed.) has no 3-SUM section. The closest is exercise 2.3-7 (p. 39):
-"given a set S of n integers and another integer x, determine whether or not
-there exist two elements in S whose sum is exactly x", in O(n lg n). That is
-the ONE-array 2-SUM. The lecture's three-array version is the course's own.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_three_sum      every triple, O(n^3)              [slide 19]
     2. three_sum_binary_search    fix A and B, binary search C,
                                   O(n^2 log n)                      [slide 20]
@@ -104,15 +30,7 @@ SLIDE_THIRD = [11, -100, 15, 19, 6]
 # =====================================================================
 # 1. BRUTE FORCE -- every triple [slide 19]
 # =====================================================================
-# Three nested loops, one per array. Try every combination.
-#
-# first_value: the value taken from A
-# second_value: the value taken from B
-# third_value: the value taken from C
-#
-# n * n * n triples, constant work each: O(n^3).
-# Slow, but obviously correct, so it is the reference the others are checked
-# against.
+# Notes: [[3-SUM — Code Notes#1. Brute force — every triple]] (variables)
 
 def brute_force_three_sum(first_array, second_array, third_array, target):
     for first_value in first_array:
@@ -126,22 +44,7 @@ def brute_force_three_sum(first_array, second_array, third_array, target):
 # =====================================================================
 # 2. BINARY SEARCH VERSION -- O(n^2 log n) [slide 20, using slide 17]
 # =====================================================================
-# Slide 20 says "for each A[i], solve 2-SUM on B and C with target s - A[i]".
-# Slide 17's 2-SUM is: sort one array, then binary search for the missing
-# value. So:
-#
-#     sort C once
-#     for each value in A:
-#         for each value in B:
-#             binary search C for  target - first_value - second_value
-#
-# third_sorted: C, sorted once, so binary search works on it
-# first_value: the value fixed from A
-# second_value: the value fixed from B
-# needed_value: what C would have to contain to finish the sum
-#
-# n * n pairs, and each binary search costs log n: O(n^2 log n).
-# (The sort is O(n log n), which is smaller, so it does not change the total.)
+# Notes: [[3-SUM — Code Notes#2. Binary search version]] (outline, variables)
 
 def binary_search(sorted_values, wanted_value):
     low_index = 0
@@ -171,24 +74,7 @@ def three_sum_binary_search(first_array, second_array, third_array, target):
 # =====================================================================
 # 3. TWO POINTERS VERSION -- O(n^2) [slides 20-22]
 # =====================================================================
-# Sort B and C once. Then, for each value in A, run the sorted 2-SUM walk
-# from slide 21 (with its typos fixed -- see the docstring).
-#
-# second_sorted: B, sorted once, smallest first
-# third_sorted: C, sorted once, smallest first
-# first_value: the value fixed from A for this round
-# remaining_target: s - A[i], what B and C must add up to
-# second_index: j on the slide; starts at the SMALLEST value of B, only goes up
-# third_index: k on the slide; starts at the LARGEST value of C, only goes down
-#
-# Why throwing a value away is safe (same argument as 2-SUM):
-#     Sum too small: B[second_index] is paired with the BIGGEST C value left.
-#     If even that is too small, no C value can save it. Drop it: step up.
-#     Sum too big: C[third_index] is paired with the SMALLEST B value left.
-#     If even that is too big, no B value can save it. Drop it: step down.
-#
-# Each walk moves one index per step, so it ends after at most 2n steps: O(n).
-# n walks of O(n) each: O(n^2).
+# Notes: [[3-SUM — Code Notes#3. Two pointers version]] (variables, why throwing a value away is safe)
 
 def three_sum_two_pointers(first_array, second_array, third_array, target):
     second_sorted = sorted(second_array)  # sorted ONCE, outside the loop

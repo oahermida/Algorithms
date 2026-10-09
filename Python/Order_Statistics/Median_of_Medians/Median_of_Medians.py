@@ -1,149 +1,12 @@
 r"""
 MEDIAN OF MEDIANS -- the k-th smallest element in WORST-CASE O(n)
-=================================================================
+Lecture 6-7, slides 9-14; CLRS 3rd ed., section 9.3 (pp. 220-222).
 
-Advanced Algorithms, Lecture 6-7 (Ivan Bliznets), slides 9-14. Also CLRS 3rd
-ed., section 9.3 (SELECT, pp. 220-222). The randomized version is in
-../QuickSelect/QuickSelect.py; read that first, this file only changes HOW THE
-PIVOT IS CHOSEN.
+Notes: [[Median of Medians — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Median of Medians — Code Notes.md
 
-    Avoid chances [slide 9]
-        - Running time of the QuickSelect algorithm depends on randomness
-          that might be undesirable in some applications.
-        - Can we find k-smallest element in O(n) time even in the worst case?
-        - Yes, we can!
-
-QuickSelect is fast when the pivot lands near the middle and slow when it lands
-near an end. Median of medians spends O(n) extra work to pick a pivot that is
-GUARANTEED to be near the middle: at least 30% of the elements are on each side
-of it. Then every round throws away at least 30%, with no luck involved.
-
-
-THE ALGORITHM [slides 10-11]
-----------------------------
-    - Split array A into n/5 groups A1, A2, ..., A(n/5), each containing 5
-      elements.
-    - For each i in {1, 2, ..., n/5} find a median in Ai. Denote this median
-      by mi.
-    - Each group has a constant number of elements. Hence, for all groups it
-      takes O(n) time.
-    - Among all elements m1, m2, ..., m(n/5) find median recursively. Denote
-      it by x.
-    - Find position of x in the whole array. Let this position be j.
-    - We know that j >= 3n/10 and j <= 7n/10.
-    - After that run our algorithm recursively on one of the parts A[0, j-1]
-      or A[j+1, n-1].
-
-"Find position of x" means: partition the array around x, the same split
-QuickSelect does, but with x as the pivot instead of a random element. CLRS
-says the same thing: "SELECT uses the deterministic partitioning algorithm
-PARTITION from quicksort ... modified to take the element to partition around
-as an input parameter."
-
-Note there are TWO recursive calls, and they do different jobs:
-    call 1  select on the n/5 medians, to FIND the pivot x
-    call 2  select on one side of x, to CONTINUE the search
-
-
-WHY x IS NEAR THE MIDDLE [slide 11]
------------------------------------
-Sort each group into a column, smallest at the bottom, and order the columns by
-their median. x is the median of the middle row:
-
-                 groups with median < x      groups with median > x
-                  .     .     .     .    .    #     #     #     #
-                  .     .     .     .    .    #     #     #     #
-    medians ->    o     o     o     o    x    #     #     #     #
-                  -     -     -     -    -    .     .     .     .
-                  -     -     -     -    -    .     .     .     .
-
-    #  is >= x: it sits above a median that is >= x (slide's "red cloud")
-    -  is <= x: it sits below a median that is <= x (slide's "bottom left")
-
-Half of the n/5 medians are >= x, and each of those columns brings 3 elements
-that are >= x (its median and the two above it). So at least
-    3 * (1/2) * (n/5)  =  3n/10
-elements are >= x. By the same picture at least 3n/10 are <= x. So whichever
-side the second call keeps, it has at most n - 3n/10 = 7n/10 elements.
-
-The slide's "j >= 3n/10" is the rounded version. CLRS (p. 221) counts exactly:
-the leftover group with fewer than 5 elements and x's own group may not
-contribute 3, so it is at least 3n/10 - 6, and the second call gets at most
-7n/10 + 6 elements. Slide 13 mentions this ("not 100% rigorous").
-
-
-THE RECURRENCE [slides 12-13]
------------------------------
-    - Find m1, ..., m(n/5) takes cn time for some c.
-    - Find median among m1, ..., m(n/5) takes T(n/5).
-    - Find position of x in A takes n operations.
-    - Additional recursive run is called on array of size j - 1 or n - j
-      which is at most 7n/10.
-    - Hence, T(n) <= T(n/5) + T(7n/10) + (c+1)n.
-    - What gives us a Master theorem in this case?
-    - It give us nothing, as it is not applicable here.
-
-The master theorem needs ONE recursive term a*T(n/b). This has two with
-different sizes. So the slides prove it by induction instead:
-
-    Take d such that d/10 >= (c+1) ...
-    T(n) <= T(n/5) + T(7n/10) + (c+1)n
-         <= dn/5 + 7dn/10 + (c+1)n  =  (9d/10 + c + 1)n  <=  dn.
-
-(Slide 13 writes "We claim that T(n) <= n"; it means T(n) <= dn.)
-
-The intuition behind the 9/10: picture the recursion tree. The root does about
-n work. Its children work on n/5 and 7n/10 elements, which together is 9n/10.
-Their children together get (9/10)^2 n, and so on. The total is
-    n * (1 + 9/10 + (9/10)^2 + ...)  =  10n,
-a geometric series, so O(n). Everything rests on 1/5 + 7/10 < 1.
-
-
-WHY GROUPS OF 5
----------------
-Redo the counting with groups of g:
-
-    g = 3:  half the n/3 columns bring 2 each  ->  n/3 thrown away, 2n/3 left
-            T(n) <= T(n/3) + T(2n/3) + O(n)      1/3 + 2/3 = 1
-            Every level of the tree does n work, there are log n levels:
-            O(n log n). No better than sorting.
-    g = 5:  half the n/5 columns bring 3 each  ->  3n/10 thrown away, 7n/10 left
-            T(n) <= T(n/5) + T(7n/10) + O(n)     1/5 + 7/10 = 9/10 < 1
-            O(n).
-    g = 7:  half the n/7 columns bring 4 each  ->  2n/7 thrown away, 5n/7 left
-            T(n) <= T(n/7) + T(5n/7) + O(n)      1/7 + 5/7 = 6/7 < 1
-            Also O(n), but sorting each group costs more.
-
-5 is the smallest group size where the fractions add up to LESS than 1. Odd
-sizes are used so every group has one true middle element. Section 5 puts
-groups of 3, 5 and 7 side by side.
-
-
-SLIDE 14
---------
-    Knowing how to find a median in O(n) deterministic time you can derandomize
-    QUICKSORT so it will be working using O(n log n) time in the worst case.
-    However, generally there is no need to do this on practice.
-
-Using select to find the exact median as quicksort's pivot gives the recurrence
-T(n) = 2T(n/2) + O(n) = O(n log n), always. "No need in practice" because the
-constant in select is larger (section 5 measures about 8 comparisons per
-element, against about 3.4 for QuickSelect), and random pivots are already
-fast on average.
-
-
-DUPLICATES
-----------
-CLRS assumes the elements are DISTINCT. The answers below are correct with
-duplicates too, but the 3n/10 guarantee is not: the single-pivot partition puts
-all copies of x on one side, so an array of identical values loses only one
-element per round. The usual fix is a three-way split (< x, = x, > x) and
-returning x whenever the wanted rank falls in the middle block. That is beyond
-the slides, so it is only described here.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. insertion_sort_group  sort one group of at most 5 (CLRS step 2)
     2. partition_around      partition with a GIVEN pivot value (CLRS step 4)
     3. select                the slide 10-11 algorithm
@@ -164,14 +27,7 @@ stats = {"comparisons": 0}
 # =====================================================================
 # 1. SORT ONE SMALL GROUP [CLRS 9.3 step 2]
 # =====================================================================
-# group: a short list, at most group_size elements, sorted in place
-# position: the element being inserted into the sorted part on its left
-# current: its value
-# slot: where it will go; moves left while the value there is bigger
-#
-# Plain insertion sort (CLRS 2.1). A group has a constant number of elements, so
-# this is O(1) per group and O(n) over all n/5 groups -- slide 10's
-# "for all groups it takes O(n) time".
+# Notes: [[Median of Medians — Code Notes#1. Sort one small group]] (variables, why O(n) over all groups)
 
 def insertion_sort_group(group):
     for position in range(1, len(group)):
@@ -189,16 +45,7 @@ def insertion_sort_group(group):
 # =====================================================================
 # 2. PARTITION AROUND A GIVEN VALUE [slide 11 "find position of x"; CLRS 9.3 step 4]
 # =====================================================================
-# values: the list, rearranged in place
-# low, high: the piece being split, both ends included
-# pivot_value: x, the median of medians
-# pivot_spot: where x currently is, found by a scan
-# small_end: last position of the "<= x" region (CLRS PARTITION's i)
-# scan: the position being looked at (CLRS PARTITION's j)
-#
-# Same Lomuto partition as ../QuickSelect/QuickSelect.py, with one extra first
-# step: find x and swap it to the end, so the usual "pivot is the last element"
-# code works unchanged. Returns x's final position, the slide's j.
+# Notes: [[Median of Medians — Code Notes#2. Partition around a given value]] (variables)
 
 def partition_around(values, low, high, pivot_value):
     pivot_spot = values.index(pivot_value, low, high + 1)
@@ -216,20 +63,7 @@ def partition_around(values, low, high, pivot_value):
 # =====================================================================
 # 3. SELECT -- the k-th smallest, worst-case O(n) [slides 10-11; CLRS 9.3]
 # =====================================================================
-# values: the list, rearranged in place as it goes
-# low, high: the piece still being searched
-# wanted_rank: which smallest we want, counted from 1, relative to the piece
-# group_size: 5 in the lecture; a parameter only so section 5 can try 3 and 7
-# medians: one median per group, m1 .. m(n/5) on slide 10
-# pivot_value: x, the median of the medians
-# pivot_position: where x lands after the split (slide j)
-# pivot_rank: x's rank inside the piece, j - low + 1
-#
-# Small pieces (at most one group) are just sorted directly. That is the base
-# case slide 13 needs ("on instances with at most 200 elements ...").
-# The lower median is used for groups and for the medians, CLRS's convention.
-#
-# After the split, the three-way decision is identical to QuickSelect.
+# Notes: [[Median of Medians — Code Notes#3. Select — the k-th smallest, worst-case O(n)]] (variables, base case)
 
 def select(values, low, high, wanted_rank, group_size=5):
     size = high - low + 1
@@ -280,26 +114,7 @@ def median(values):
 # =====================================================================
 # 5. WHY 5 -- groups of 3, 5 and 7 compared
 # =====================================================================
-# Two tables.
-#
-# TABLE 1, the worst case. worst_case_work evaluates the recurrence itself:
-#     T(n) = n + T(number of groups) + T(what is left after the split)
-# where "what is left" assumes the split is as bad as the counting in the
-# docstring allows. T(n) / n is the cost per element.
-#   groups of 5 and 7: it levels off (towards 10 and 7) -> O(n)
-#   groups of 3:       it climbs by the same step every time n grows tenfold,
-#                      which is what log n looks like -> O(n log n)
-# It counts elements handled, not the cost of sorting each group, so 7 looks
-# cheapest here. Sorting groups of 7 costs more per group, which evens it out.
-#
-# TABLE 2, real runs. Comparisons per element while finding the median of a
-# shuffled list. Random input almost never produces the worst split, so all
-# three group sizes look similar here. The guarantee is about the worst case,
-# which is why table 1 is the one that shows the difference.
-#
-# group_count: how many groups the piece splits into, n/g rounded up
-# thrown_away: elements certainly on the far side of x, (g+1)/2 per column for
-#              half of the columns
+# Notes: [[Median of Medians — Code Notes#5. Why 5 — groups of 3, 5 and 7 compared]] (the two tables, variables)
 
 def worst_case_work(size, group_size, memo):
     if size <= group_size:

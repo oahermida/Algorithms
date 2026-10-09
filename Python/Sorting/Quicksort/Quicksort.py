@@ -1,68 +1,12 @@
 r"""
 QUICKSORT -- with the Lomuto partition and a random pivot
-=========================================================
+CLRS 3rd ed., chapter 7 (pp. 171-180).
 
-Advanced Algorithms: quicksort is listed but not re-taught. Lecture 1, slide 11
-puts it under Programming Fundamentals with "O(n^2) w.c. / O(n log n) ave.c.".
-Lecture 2, slide 36 lists it as a divide-and-conquer algorithm. Lecture 6-7,
-slides 6 and 14 come back to it through QuickSelect and median of medians.
-The pseudocode here is CLRS 3rd ed., chapter 7: QUICKSORT and PARTITION
-(section 7.1, p. 171), RANDOMIZED-QUICKSORT (section 7.3, p. 179), worst case
-(section 7.4.1, p. 180).
+Notes: [[Quicksort — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Quicksort — Code Notes.md
 
-The partition procedure is the same one ../../Order_Statistics/QuickSelect/
-QuickSelect.py uses for slide 7's "split" step. Quicksort recurses into BOTH
-sides of the split; QuickSelect recurses into one.
-
-    QUICKSORT(A, p, r)                       [CLRS p. 171]
-    1 if p < r
-    2     q = PARTITION(A, p, r)
-    3     QUICKSORT(A, p, q - 1)
-    4     QUICKSORT(A, q + 1, r)
-
-Divide and conquer, but backwards from merge sort:
-    merge sort:  split blindly in the middle,   do the real work when merging
-    quicksort:   do the real work when splitting, combining needs nothing
-After PARTITION the pivot is in its final place, everything left of it is <= it
-and everything right of it is > it. Sort the two sides and the whole piece is
-sorted. There is no merge step.
-
-
-WHERE THE PIVOT LANDS DECIDES EVERYTHING
-----------------------------------------
-    balanced split every time:  T(n) = 2T(n/2) + Theta(n)  =  Theta(n log n)
-    1 : n-1 split every time:   T(n) = T(n-1) + Theta(n)   =  Theta(n^2)
-
-The second line is what happens to the plain version on SORTED input. The pivot
-is always the last element, which is always the maximum of its piece. The split
-leaves n-1 elements on the left and nothing on the right. Each level removes
-only the pivot, so the comparisons add up to
-    (n-1) + (n-2) + ... + 1  =  n(n-1)/2.
-Reversed input does the same, with the pivot always the minimum. Section 4
-counts it.
-
-THE RANDOM PIVOT (CLRS 7.3) swaps a random element into the last spot before
-partitioning. Now no fixed input is bad: sorted, reversed or anything else gets
-expected O(n log n) comparisons (about 1.39 n log2 n for large n; CLRS 7.4.2
-proves O(n lg n)). The worst case is still n^2, but only through bad luck, not
-through a bad input.
-
-Lecture 6-7, slide 14 mentions the third option: pick the exact median as the
-pivot with median of medians. That guarantees O(n log n) in the worst case,
-"however, generally there is no need to do this on practice."
-
-
-STABILITY AND DUPLICATES
-------------------------
-Quicksort is NOT stable: the long-distance swaps in partition can reorder equal
-keys. (Compare ../Counting_Sort/Counting_Sort.py, which is.)
-With the Lomuto partition, an array of identical values is ALSO a worst case:
-every element is <= the pivot, so the split is n-1 : 0 again. CLRS problem 7-2
-fixes that with a three-way partition; that is beyond the course.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. partition              CLRS 7.1 (Lomuto)
     2. randomized_partition   CLRS 7.3
     3. quicksort              plain and randomized, chosen by a parameter
@@ -97,19 +41,7 @@ stats = {"comparisons": 0}
 #     7 exchange A[i + 1] with A[r]
 #     8 return i + 1
 #
-# values: the list, rearranged in place
-# low, high: the piece being split, both ends included (CLRS p, r)
-# pivot: the value everything is compared with; always values[high] (CLRS x)
-# small_end: last position of the "<= pivot" region (CLRS i)
-# scan: the position being looked at (CLRS j)
-#
-# The loop invariant (CLRS p. 171) -- at the start of every pass:
-#   low .. small_end          all <= pivot
-#   small_end+1 .. scan-1     all >  pivot
-#   high                      the pivot
-# A value <= pivot found at scan is swapped to the front of the "> pivot"
-# region, and that region shifts one step right. At the end the pivot swaps into
-# small_end + 1, its final sorted position.
+# Notes: [[Quicksort — Code Notes#1. Partition]] (variables, loop invariant)
 
 def partition(values, low, high):
     pivot = values[high]
@@ -142,14 +74,7 @@ def randomized_partition(values, low, high):
 # =====================================================================
 # 3. QUICKSORT [CLRS 7.1, p. 171 and 7.3, p. 179]
 # =====================================================================
-# values: the list, sorted in place
-# low, high: the piece to sort, both ends included (CLRS p, r)
-# split_pivot: which partition to use -- randomized_partition (default) or the
-#              plain partition, which always picks the last element
-# pivot_position: where the pivot ended up (CLRS q); it never moves again
-#
-# A piece with 0 or 1 elements (low >= high) is already sorted, which is the
-# base case. The pivot itself is left out of both recursive calls.
+# Notes: [[Quicksort — Code Notes#3. Quicksort]] (variables, base case)
 
 def quicksort(values, low, high, split_pivot=randomized_partition):
     if low < high:
@@ -168,13 +93,7 @@ def quicksorted(values, split_pivot=randomized_partition):
 # =====================================================================
 # 4. THE WORST CASE, COUNTED
 # =====================================================================
-# Sorted input, both pivots. For the plain pivot the count matches n(n-1)/2
-# exactly. For the random pivot one run is shown next to the exact average
-# for distinct keys, 2(n+1)H(n) - 4n, where H(n) = 1 + 1/2 + ... + 1/n.
-# That average grows like 1.39 n log2 n.
-#
-# harmonic: H(n)
-# expected: the average number of comparisons over all random pivot choices
+# Notes: [[Quicksort — Code Notes#4. The worst case, counted]]
 
 def count_comparisons(values, split_pivot):
     stats["comparisons"] = 0

@@ -1,123 +1,12 @@
 r"""
 CHESS-KNIGHT COLLECTING REWARDS
-===============================
+Lecture 3, slides 13-17 (no textbook covers this problem).
 
-Advanced Algorithms, Lecture 3 (Ivan Bliznets), slides 13-17. This problem has
-NO textbook citation -- the lecture is the only source for it, so the statement
-below is the lecturer's own, word for word.
+Notes: [[Knight Rewards — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Knight Rewards — Code Notes.md
 
-    KNIGHT COLLECTING REWARDS [slide 13]
-        We are given a table of size n x m. Each cell of this table contains a
-        reward that the knight will get if he visits the cell. The knight begins
-        its journey in cell (0, 0) and must finish it in cell (n-1, m-1). The
-        knight in each move must move to the right and up. That is, it moves
-        from a cell (x, y) to a cell (x+1, y+2) or to a cell (x+2, y+1). Your
-        goal is to guide the knight so that eventually he collects the largest
-        possible reward.
-
-        Input:     integers n, m, table of rewards of size n x m
-        Question:  what is the maximum reward the knight can get for its journey?
-
-A note on "right and up": both coordinates INCREASE on both moves, so in matrix
-terms (row, column) both indices only ever grow. That is what makes the problem
-a DAG and therefore a DP -- the knight can never revisit a cell, so there is no
-cycle for a subproblem to depend on.
-
-    the two moves, drawn from the knight's point of view:
-
-              . . . . .                      (x, y) is the knight now
-              . . . . .                      both targets are down-right
-              . . # . .   <- (x+1, y+2)      of it in the table
-              . . . . .
-              . # . . .   <- ...no: (x+2, y+1) is HERE:
-              K . . . .
-                ^
-                |
-        K = (x, y),   one move goes +1 row / +2 cols,
-                      the other     +2 rows / +1 col
-
-This is the same L-shape a chess knight makes, restricted to the two moves that
-go forward in both directions -- four of the usual eight are backward in one
-coordinate and so are banned.
-
-
-WHY IT IS A DP, AND THE RECURRENCE [slides 14-15]
--------------------------------------------------
-The lecture's reasoning, which is the arrival-based framing again:
-
-    We know that the knight can get into the cell (n-1, m-1) either from the
-    cell (n-2, m-3) or from the cell (n-3, m-2). Hence, if we know the most
-    rewarding paths from (0,0) to (n-2, m-3) and to (n-3, m-2) then essentially
-    we solve the problem. Simply take a path that has a higher [value] among
-    these two paths.
-
-    R[i][j] = A[i][j] + max( R[i-1][j-2], R[i-2][j-1] )       [slide 15]
-
-    base case:  R[0][0] = A[0][0]
-    answer:     R[n-1][m-1]
-
-Every other cell starts at -infinity, meaning "no legal path reaches this cell
-at all" -- the same convention as the bunny problems in ../Bunny_DP/. It is not
-a placeholder for zero: many cells here are genuinely unreachable, and a zero
-would claim they could be visited for free.
-
-TWO WARNINGS FROM THE SLIDES THEMSELVES
-    "Caution make sure that your indices i-1, j-2 are not out of range."
-    [slide 15] -- this is the whole implementation difficulty; see section 2.
-
-    "R[n-1, m-1] gives us the maximum reward but does not tell us how to achieve
-    this. Either create an additional matrix that contains pointers to previous
-    cell in an optimal path, or move back looking at values where exactly
-    equality occurs." [slide 16]
-
-    Both of those are implemented below -- section 3 is the parent matrix, and
-    section 4 is the walk-back. They are offered as alternatives on the slide,
-    and section 7 checks they always produce paths of equal value.
-
-    A THIRD THING, not flagged on the slide: the pseudocode on slides 15-17 ends
-    with "return R[n]", which cannot be right for a two-dimensional table -- the
-    text one line below says R[n-1, m-1], which is what is meant. Slide 12's rod
-    cutting pseudocode has a related slip; see ../Rod_Cutting/Rod_Cutting.py.
-
-
-WHY THE LOOP ORDER WORKS
-------------------------
-The loop runs i ascending, then j ascending -- plain row-major order. That is a
-valid order for free, because both predecessors (i-1, j-2) and (i-2, j-1) have a
-SMALLER row index and a SMALLER column index than (i, j). Anything row-major
-reaches them first. In the DAG language of ../Fibonacci_DP/Fibonacci_DP.py, the
-nested loops are walking a topological order without having to compute one.
-
-
-REACHABILITY -- THE PART THE SLIDES DO NOT MENTION
---------------------------------------------------
-Each move adds exactly 3 to (row + column): +1+2 or +2+1. So after k moves the
-knight stands on a cell with row + column = 3k, and NO cell whose coordinates
-sum to something other than a multiple of 3 can ever be visited.
-
-That means the answer can be "there is no journey at all" -- for instance on any
-board where (n-1) + (m-1) is not divisible by 3. On a 3x3 board the target (2,2)
-sums to 4, so the knight cannot finish, and R[n-1][m-1] stays -infinity. Section
-6 runs that case. An implementation that reports 0 there is claiming a journey
-happened and collected nothing.
-
-The divisibility rule is necessary but not sufficient: the board also has to be
-wide enough in both directions for the L-shapes to fit.
-
-
-COMPLEXITY [slide 17]
----------------------
-    "We created a table of size n x m. Compute value inside each cell in
-     constant time. So the running time is O(nm)."
-
-Space is O(nm) as well, and unlike the one-dimensional bunny it does NOT reduce
-to O(1): a cell depends on rows i-1 and i-2, so two rows must be kept, giving
-O(m) at best -- and keeping only two rows destroys the path restoring, exactly
-as in ../Bunny_DP/.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_knight       every legal move sequence, for checking
     2. knight_rewards           the lecture's algorithm  [slide 15]
     3. restore_path_by_parents  slide 16's first suggestion: a parent matrix
@@ -183,19 +72,7 @@ def brute_force_knight(board):
 # =====================================================================
 # 2. THE LECTURE'S ALGORITHM [slide 15]
 # =====================================================================
-# board          - A, the rewards; board[row][column] is what that cell pays
-# best_to_cell   - R, the dp table; best_to_cell[row][column] is the best total
-#                  collectible on any legal journey from (0,0) to that cell
-# row, column    - the cell being filled on this pass
-# best_arrival   - the better of the two predecessors, before adding this cell
-#
-# The slide's "caution" about indices is handled by the two bounds checks below.
-# They are not decoration: (i-1, j-2) is off the board for every cell in the
-# first row or the first two columns, which is most of the top-left corner.
-#
-# A cell whose predecessors are both -infinity stays -infinity, because
-# reward + (-infinity) is still -infinity. Unreachable cells propagate their
-# unreachability for free, with no special case.
+# Notes: [[Knight Rewards — Code Notes#2. The lecture's algorithm]] (variables, bounds checks, -infinity)
 
 def knight_rewards(board):
     row_count = len(board)
@@ -276,18 +153,7 @@ def knight_rewards_with_parents(board):
 # 4. PATH RESTORING, WAY TWO [slide 16: "move back looking at values
 #    where exactly equality occurs"]
 # =====================================================================
-# No second table. Standing on a cell, ask which predecessor could have produced
-# its value: the one where
-#
-#       best_to_cell[cell] - board[cell] == best_to_cell[predecessor]
-#
-# i.e. where the equality in the recurrence holds exactly. That is the slide's
-# phrasing, and it is why the recurrence has to be exact arithmetic -- with
-# floating-point rewards this comparison would be unsafe and the parent matrix
-# would be the only correct option.
-#
-# When both predecessors tie, either is a genuinely optimal answer; this picks
-# the (+1, +2) one for determinism.
+# Notes: [[Knight Rewards — Code Notes#4. Path restoring, way two]] (the equality test, ties)
 
 def restore_path_by_walkback(board, best_to_cell):
     row_count = len(board)
@@ -525,58 +391,4 @@ print("   slide offers can pick DIFFERENT paths when values tie, but never paths
 print("   different value)")
 
 
-# === How it Runs ===
-#
-# --- knight_rewards ---
-# best_to_cell is an n x m table of -inf, with one cell written directly: the
-# start, R[0][0] = A[0][0]. that is the only value the recurrence cannot produce
-# the nested loops go row by row, left to right, and fill EVERY cell -- including
-# the ones no knight can reach, which simply stay -inf because both of their
-# predecessors are -inf and reward + (-inf) = -inf
-# each cell does constant work: two bounds checks, two lookups, one max, one add
-# no recursion, because row-major order already reaches (i-1,j-2) and (i-2,j-1)
-# before (i,j) -- both have a smaller row AND a smaller column
-#
-# for the 4 x 4 board
-#     A = [[5, 1, 9,  2],
-#          [3, 4, 7,  6],
-#          [8, 2, 1,  3],
-#          [0, 5, 4, 10]]
-#
-# only four cells are reachable, and the fill order visits them like this:
-#   (0,0)  base case                                     R = 5
-#   (1,2)  A=7, predecessors (0,0)=5 and (-1,1) OOB      R = 7 + 5  = 12
-#   (2,1)  A=2, predecessors (1,-1) OOB and (0,0)=5      R = 2 + 5  = 7
-#   (3,3)  A=10, predecessors (2,1)=7 and (1,2)=12       R = 10 + 12 = 22
-#   every other cell: both predecessors -inf, so R stays -inf
-#   return R[3][3] = 22
-#
-# (1,2) and (2,1) are the two cells one move from the start, and they are where
-# the whole decision gets made. the knight can reach the finish through either,
-# so the only question is which of them pays better on the way -- 7 against 2
-#
-# --- restore_path_by_parents ---
-# records the winner while the max is being taken, so nothing has to be re-derived
-#   parent_of[(3,3)] = (1,2)     the bigger of R[2][1]=7 and R[1][2]=12
-#   parent_of[(1,2)] = (0,0)
-#   parent_of[(0,0)] = None      the start
-#   collected backwards as [(3,3), (1,2), (0,0)], reversed to
-#   (0,0) -> (1,2) -> (3,3), worth 5 + 7 + 10 = 22
-#
-# --- restore_path_by_walkback ---
-# the same route with no second table, by asking where the equality holds:
-#   at (3,3): R = 22, A = 10, so the predecessor must hold 22 - 10 = 12
-#             R[2][1] = 7  -> no
-#             R[1][2] = 12 -> YES, this is where the knight came from
-#   at (1,2): R = 12, A = 7,  so the predecessor must hold 12 - 7 = 5
-#             R[0][0] = 5  -> YES
-#   at (0,0): the start, stop
-# same path, one table instead of two. the trade is that it relies on the
-# arithmetic being exact -- integers here, so the == is safe
-#
-# --- the unreachable case ---
-# on the 3 x 3 board, the loops still fill all nine cells, but only (0,0) ever
-# gets a finite value: (1,2) and (2,1) are reachable and finite too, while the
-# target (2,2) has predecessors (1,0) and (0,1), both -inf, so it stays -inf
-# the answer is -inf, and it means "no journey exists", not "a journey worth
-# nothing" -- which is exactly why the table is initialised to -inf and not 0
+# Notes: [[Knight Rewards — Code Notes#How it runs]] (traced example on the 4 x 4 board)

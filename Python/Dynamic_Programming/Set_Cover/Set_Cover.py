@@ -1,106 +1,12 @@
 r"""
 SET COVER -- DYNAMIC PROGRAMMING OVER SUBSETS OF THE UNIVERSE
-=============================================================
+Lecture 4-5, slides 53-54 (no CLRS section gives this algorithm).
 
-Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slides 53-54, the last
-problem of the deck. The same table is the standard exact algorithm for set
-cover in Fomin & Kratsch, *Exact Exponential Algorithms*, chapter 3 (not
-checked against the book here -- the slides are the source). No CLRS section
-gives this algorithm; CLRS 35.3 covers set cover only by a greedy
-approximation.
+Notes: [[Set Cover — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Set Cover — Code Notes.md
 
-    THE MOVIE STORY [slide 53]
-        A group of friends planning a trip to remote area without internet.
-        They are planning to download some movies to watch in the road.
-        However, they have different tastes. They made a list of films and for
-        each film it is known a subset of friends that would like to watch
-        this movie. Your goal is to pick the smallest number of movies such
-        that for each person there is at least one film that she/he would like
-        to watch.
-
-    SET COVER [slide 53]
-        Input:     A set U and a list of subsets C1, C2, ..., Cm
-        Question:  What is the smallest number k such that there are
-                   i1, i2, ..., ik such that Ci1 u Ci2 u ... u Cik = U.
-
-So U is the friends, and each Cj is the friends who like movie j.
-
-    Example [slide 54]:
-        U = {1, 2, ..., 6},
-        C1 = {1, 2, 6}, C2 = {1, 3, 6}, C3 = {4, 5}, C4 = {4, 5, 6},
-        C5 = {3}, C6 = {2, 5}
-        Solution: k = 3, C1 u C3 u C5 = U.
-
-
-THE TABLE [slide 54]
---------------------
-    For S (subset of U) and j in {1, 2, ..., m} we denote by OPT(S, j) the
-    smallest number of sets from C1, C2, ..., Cj which union covers S.
-    Answer to our problem is OPT(U, m).
-
-One row per j (how many sets are on offer), one column per SUBSET S of U.
-There are 2^n subsets, so the table is 2^n x m. This is the "exponential" in
-the title: the DP is exponential in n = |U|, but only linear in m.
-
-The recurrence is the same take-or-skip choice as subset sum:
-
-    OPT(S, j+1) = min{ OPT(S, j),  1 + OPT(S \ C(j+1), j) }
-                         |               |
-                         |               '-- TAKE set j+1: it covers its part
-                         |                   of S for the cost of one set; the
-                         |                   rest, S \ C(j+1), must be covered
-                         |                   by the first j sets
-                         '-- SKIP set j+1: cover S with the first j sets
-
-    base:  OPT(empty set, 0) = 0           nothing to cover, no sets needed
-           OPT(S, 0) = infinity, S not empty   no sets cannot cover anything
-
-Running time [slide 54]: O(n m 2^n). "Size of the table 2^n x m.
-Computation of S \ C(j+1) takes O(n) time."
-
-
-SUBSETS AS BITMASKS
--------------------
-Store each subset of U as an integer. Bit number k is 1 when element k+1 is in
-the set:
-
-    U  = {1, 2, 3, 4, 5, 6}  ->  0b111111  = 63
-    C1 = {1, 2, 6}           ->  0b100011  = 35
-                                   ^   ^^
-                                   6   21
-
-Then the set operations are single machine instructions:
-
-    S \ C      ->  S & ~C
-    S u C      ->  S | C
-    every S    ->  for subset_mask in range(2 ** len(universe))
-
-So S \ C costs O(1), not the slide's O(n), and the total is O(m 2^n).
-
-
-TYPOS IN THE SLIDES
--------------------
-    - Slide 54 writes "OPT(S, j+1) = min{OPT(S, j), OPT(S \ Cj+1)}". Two
-      things are missing: the "1 +" for taking the set, and the second index
-      ", j". Without the "1 +" every answer would be 0.
-    - Slide 54 defines OPT only for j in {1, ..., m}, but the recurrence needs
-      a starting row. The base row j = 0 is added above.
-    - Slide 53 spells "SET COVEr". No effect.
-
-
-WHY NOT JUST BRUTE FORCE?
--------------------------
-Brute force tries families of sets: up to 2^m of them. The DP costs about
-m * 2^n. Which wins depends on which number is small:
-
-    few friends, many movies  (n small, m big)    -> the DP wins
-    many friends, few movies  (n big, m small)    -> brute force wins
-
-Section 6 prints both counts for a few sizes.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_set_cover   every family of sets, smallest first
     2. set_cover_table         the lecture's table OPT(S, j)       [slide 54]
     3. restore_cover           WHICH sets, walking back on the table
@@ -160,15 +66,7 @@ def brute_force_set_cover(universe, sets):
 # =====================================================================
 # 2. THE LECTURE'S TABLE [slide 54]
 # =====================================================================
-# universe: U, as a list (its order fixes the bit numbers)
-# sets: C1 .. Cm
-# set_masks: each Cj as a bitmask
-# table: table[set_count][subset_mask] = OPT(S, j), the fewest sets among the
-#        first `set_count` that cover the subset S
-# set_count: j, how many sets are on offer, 0 .. m
-# subset_mask: S, one subset of U, 0 .. 2^n - 1
-#
-# O(m 2^n) time and space.
+# Notes: [[Set Cover — Code Notes#2. The lecture's table]] (variables)
 
 def set_cover_table(universe, sets):
     subset_total = 2 ** len(universe)
@@ -194,16 +92,7 @@ def set_cover_table(universe, sets):
 # =====================================================================
 # 3. RESTORE THE COVER -- walking back on the table
 # =====================================================================
-# Stand on OPT(U, m). Ask which branch of the min made it:
-#
-#   OPT(S, j) == OPT(S, j-1)  -> set j was SKIPPED; go up a row
-#   otherwise                 -> set j was TAKEN; remove its elements from S
-#
-# set_count / remaining: where the walk stands (the row, and the subset S)
-# chosen: the indices of the sets taken (0-based: index 0 is C1)
-#
-# Preferring the skip means it walks up to the first row j where U can be
-# covered at the optimal size, so it prefers the EARLIEST sets in the list.
+# Notes: [[Set Cover — Code Notes#3. Restore the cover — walking back on the table]] (walk-back rule, variables)
 
 def restore_cover(universe, sets, table):
     remaining = 2 ** len(universe) - 1
@@ -224,17 +113,7 @@ def restore_cover(universe, sets, table):
 # =====================================================================
 # 4. ONE ROW INSTEAD OF THE TABLE
 # =====================================================================
-# Each row reads only the row before it, so keep one row of 2^n values.
-#
-# best: best[S] = fewest sets so far that cover S
-#
-# In subset sum the one-row version had to run DOWNWARD, or an element got
-# used twice. Here the direction does not matter. Reading a value that
-# already took set C this round is harmless: taking C twice covers nothing
-# new, because (S \ C) \ C = S \ C. So that value is never better than the
-# old one. The tests check this against the full table.
-#
-# O(2^n) space. As always, it gives up the restore.
+# Notes: [[Set Cover — Code Notes#4. One row instead of the table]] (why the direction does not matter)
 
 def set_cover_rolling(universe, sets):
     best = [INFINITY] * (2 ** len(universe))

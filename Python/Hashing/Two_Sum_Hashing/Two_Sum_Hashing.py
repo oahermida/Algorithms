@@ -1,135 +1,12 @@
 r"""
 2-SUM VIA HASHING
-=================
+Advanced Algorithms, Lecture 9 "Hashtables", slides 5-12; CLRS 3rd ed., 11.1-11.2.
 
-Advanced Algorithms, Lecture 9 "Hashtables" (Ivan Bliznets), slides 5-12.
-CLRS 3rd ed., 11.1 (direct-address tables, p. 254) and 11.2 (chaining).
+Notes: [[Two Sum Hashing — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Two Sum Hashing — Code Notes.md
 
-This is the hash-set version that ../../Array_Techniques/2_SUM/2_Sum.py
-mentions in its docstring but does not build. Same question, same names:
-left_array, right_array, target.
-
-
-THE PROBLEM [slide 5]
----------------------
-    2-SUM PROBLEM (REFORMULATED)
-    Input:      Two arrays of positive integer numbers A, B of length n,
-                number s.
-    Question:   Are there i, j such that A[i] + B[j] = s?
-
-    At this point, we know how to solve it in O(n log n) time.
-
-That O(n log n) is the sort in 2_Sum.py (two pointers or binary search).
-Hashing removes the log n: O(n) expected time.
-
-The trick in one line: A[i] + B[j] = s means A[i] = s - B[j]. So put every A
-value somewhere you can look up in O(1), then for each B value ask "is
-s - B[j] in there?".
-
-
-STEP 1: A DIRECT ACCESS TABLE [slide 6; CLRS 11.1]
---------------------------------------------------
-    for i from 0 to n - 1 do
-       C[A[i]] = 1
-    end for
-    for i from 0 to n - 1 do
-       if C[s - B[i]] == 1 then
-            return 'Yes'
-       end if
-    end for
-    return 'No'
-
-    - We need to initialize array C
-    - Size of C can be huge compared with n
-    - Direct Access table
-
-The VALUE is the index. So C needs one cell for every value up to the largest
-A value. A = [3, 1000000] needs a million cells for two numbers, and filling
-them with 0 first costs a million steps. Time and space are O(n + max A), not
-O(n). Section 2 prints that size.
-
-The slide also skips a bounds check: s - B[i] can be negative or bigger than
-any A value. Then C[s - B[i]] is outside the array. Section 2 checks first.
-
-
-STEP 2: SQUEEZE THE VALUES WITH A FUNCTION [slides 7-8]
--------------------------------------------------------
-    If only we knew a function h such that:
-      1. h(x) can be computed in O(1) time for each x <= U;
-      2. for all x in A: h(x) <= M and M = O(n)
-      3. for all x, y in A: h(x) != h(y)
-    then we can do the following:
-      1. Create array C of size M
-      2. Put A[i] into position h(A[i]) in the array C
-      3. For each j check if C[h(s - B[j])] equals s - B[j].
-
-Now C has O(n) cells, not O(max A). The cell stores the VALUE itself, not a 1.
-That is needed: a different number can have the same h, so finding SOMETHING
-in the cell is not enough. You must check it is s - B[j].
-
-Pseudocode [slide 8]:
-
-    C <- new array of size 5n
-    for i from 0 to n - 1 do
-       C[h(A[i])] = A[i]
-    end for
-    for i from 0 to n - 1 do
-       if C[h(s - B[i])] == A[i] then        <- ERRATUM, see below
-            return 'Yes'
-       end if
-    end for
-    return 'No'
-
-
-THE ERRATUM ON SLIDE 8
-----------------------
-The check should be
-
-       if C[h(s - B[i])] == s - B[i] then
-
-as slide 7's step 3 says. A[i] is the wrong thing to compare with: in the
-second loop, i walks over B, so A[i] is an unrelated A value. Example: A = [16],
-B = [24], s = 33, h(x) = x mod 7. Cell h(16) = 2 holds 16. s - B[0] = 9 and
-h(9) = 2, so the cell holds 16, and 16 == A[0]. The literal slide says Yes.
-But 16 + 24 = 40. Section 6 runs this.
-
-
-STEP 3: WHEN h IS NOT ONE-TO-ONE [slides 9-12]
-----------------------------------------------
-Condition 3 (no two A values share a cell) is the problem. Slide 12:
-
-    Unfortunately, by Pigeonhole principle there is no single function that
-    works for all X subset of {1, 2, ..., U} if U > M.
-    That is why we relax our requirements to h and allow randomness.
-
-Slide 11 shows it with h(x) = x mod 7: 16 and 9 both go to cell 2, 4 and 18
-both go to cell 4. With one value per cell, the second one OVERWRITES the
-first, and the algorithm can miss a real pair.
-
-The fix is the rest of Lecture 9: a hash table with chaining (each cell holds
-a LIST) and a random h (slide 14). See ../Hash_Table/Hash_Table.py. Then:
-
-    insert every A value     n inserts,  O(1) expected each
-    look up every s - B[j]   n searches, O(1) expected each
-    total                    O(n) expected
-
-Python's set is a hash table too (slide 4), so `value in set` gives the same
-O(n) with one line. The price, as 2_Sum.py says, is O(n) extra memory.
-
-
-OTHER SLIDE NOTES
------------------
-    Slide 5 says A and B both have length n. The examples on slides 9-11 have
-    6 values in A and 7 in B. The code here allows different lengths.
-    Slides 10-11 list s - B = {22, 9, -1, 27, 25, 16}: six values. B has seven.
-    33 - 29 = 4 is missing, and 4 is in A. So 4 + 29 = 33 is a second pair.
-    Slide 7 condition 3 should say "for all x != y in A".
-    s - B[j] can be negative (33 - 34 = -1 on slide 10). The slide takes
-    -1 mod 7 = 6. Python's % does that too. A C-style % gives -1.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_two_sum       every pair, O(n^2), the reference
     2. direct_access_two_sum     slide 6, table as big as max A
     3. slide_array_two_sum       slide 8 (corrected), one value per cell
@@ -174,13 +51,7 @@ def brute_force_two_sum(left_array, right_array, target):
 # =====================================================================
 # 2. DIRECT ACCESS TABLE [slide 6; CLRS 11.1]
 # =====================================================================
-# present: C; present[value] is True when value is in left_array
-# table_size: max(left_array) + 1, one cell per possible value
-# wanted: s - B[i], the left value that would complete the pair
-#
-# The bounds check (0 <= wanted < table_size) is missing on the slide.
-#
-# O(n + max A) time and space. The max A part is the whole problem.
+# Notes: [[Two Sum Hashing — Code Notes#2. Direct access table]] (variables, bounds check, cost)
 
 def direct_access_two_sum(left_array, right_array, target):
     table_size = max(left_array) + 1
@@ -198,18 +69,7 @@ def direct_access_two_sum(left_array, right_array, target):
 # =====================================================================
 # 3. THE SLIDE 8 ARRAY, CORRECTED [slides 7-8]
 # =====================================================================
-# cells: C, one value per cell, None means empty
-# hash_function: h; must give different cells to different A values
-# wanted: s - B[i]
-#
-# Correct ONLY when h is one-to-one on left_array (slide 7, condition 3).
-# If two A values share a cell, the later one overwrites the earlier one.
-# A "Yes" is always right (the value is checked). A "No" can be wrong.
-#
-# The cell count is slide 8's 5n, unless the caller gives one (the slides'
-# examples use x mod 7, so 7 cells).
-#
-# O(n) time, if h is O(1).
+# Notes: [[Two Sum Hashing — Code Notes#3. The slide 8 array, corrected]] (variables, when it is correct)
 
 def slide_array_two_sum(left_array, right_array, target, hash_function, cell_count=None):
     if cell_count is None:
@@ -241,16 +101,7 @@ def slide_array_two_sum_literal(left_array, right_array, target, hash_function, 
 # =====================================================================
 # 4. A CHAINED HASH SET [slide 14; CLRS 11.2]
 # =====================================================================
-# A cut-down copy of ChainedHashTable from ../Hash_Table/Hash_Table.py, so
-# this file runs on its own. Keys only, no values: 2-SUM only asks "is it in?".
-#
-# buckets: m lists; each list holds the A values that hash there
-# prime: p, a prime bigger than any key looked up
-# multiplier: a, random, 0 < a < p
-# offset: b, random, 0 <= b < p
-#
-# h(x) = ((a*x + b) mod p) mod m, drawn once when the set is made (slide 23).
-# Passing hash_function replaces it, so the slide's x mod 7 can be replayed.
+# Notes: [[Two Sum Hashing — Code Notes#4. A chained hash set]] (variables)
 
 def is_prime(number):
     if number < 2:
@@ -299,16 +150,7 @@ class ChainedHashSet:
 # =====================================================================
 # 5. 2-SUM WITH THE CHAINED SET, AND WITH PYTHON'S set
 # =====================================================================
-# seen: the hash set holding every left value
-# slot_count: m = n, so the load factor n/m is at most 1 [slide 17]
-#   (a caller that passes its own hash_function passes its slot_count too)
-# universe_limit: U; must cover every key hashed, A values AND s - B[j]
-# wanted: s - B[j]
-#
-# A values are positive (slide 5), so a wanted value below 1 cannot be in A.
-# It is skipped before hashing, which keeps every hashed key in 0..U.
-#
-# O(n) expected: n adds and n lookups, each O(1 + n/m) = O(1) on average.
+# Notes: [[Two Sum Hashing — Code Notes#5. 2-SUM with the chained set, and with Python's set]] (variables)
 
 def chained_two_sum(left_array, right_array, target, random_generator=random,
                     hash_function=None, slot_count=None):

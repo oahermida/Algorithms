@@ -1,68 +1,12 @@
 r"""
 ROTATIONS
-=========
+Lecture 8, slides 18-22; CLRS 3rd ed., section 13.2 (p. 313).
 
-Advanced Algorithms, Lecture 8 (Ivan Bliznets), slides 18-22. The bibliography
-(slide 34) says "Rotations Chapter 13.2 [CLRS]": LEFT-ROTATE is on CLRS 3rd ed.
-p. 313, and RIGHT-ROTATE is left to the reader as Exercise 13.2-1.
+Notes: [[Rotations — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Rotations — Code Notes.md
 
-A rotation is the one tool AVL trees (../AVL/AVL.py) and treaps
-(../Treap/Treap.py) use to change a tree's shape. It moves one node up and one
-node down, and it never breaks the search-tree order.
-
-
-THE PICTURE [slides 18-21]
---------------------------
-                     Right rotation
-              y           =>             x
-             / \                        / \
-            x   C                      A   y
-           / \                            / \
-          A   B                          B   C
-                     <=
-                     Left rotation
-
-A, B and C are whole subtrees (possibly empty). Only three links change:
-    - x moves up into y's old spot
-    - y becomes x's right child
-    - B moves across, from x's right to y's left
-
-WHY THE ORDER SURVIVES [slide 19]
----------------------------------
-    A < x < B < y < C          A < x < B < y < C
-
-Both trees list the same in-order sequence. B is the only subtree that moves,
-and it sits between x and y in both pictures, so every key stays on the correct
-side of every other key.
-
-WHY ROTATIONS ARE USEFUL [slide 22]
------------------------------------
-    Rotations are awesome! Here, is why:
-    h(A) > h(B), h(C)  =>  dis_T'(x) < dis_T(y).
-
-Here dis(v) = h(left child) - h(right child), the disbalance from slide 15.
-In words: if the left-left subtree A is the tall one, one right rotation lifts A
-a level and pushes C down a level, so the tree leans left less than before.
-Section 5 tests that claim on many random trees.
-
-What it says, worked through: before, dis(y) = (h(A) + 1) - h(C). After,
-dis(x) = h(A) - (1 + max(h(B), h(C))). The second is smaller by at least 2.
-
-Both rotations are O(1): a fixed number of pointer changes, whatever the size of
-A, B and C.
-
-
-TWO VERSIONS IN THIS FILE
--------------------------
-    1. CLRS style: nodes have parent pointers, the call is left_rotate(tree,
-       node), and the tree's root is updated if needed.          [CLRS p. 313]
-    2. Subtree style: rotate_right(old_top) returns the new top, and the
-       caller hangs it back where old_top was. No parent pointers. This is the
-       style AVL.py and Treap.py use, because their recursion already knows
-       where the subtree hangs.
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. TreeNode and a small tree builder
     2. left_rotate / right_rotate, CLRS style      [slides 20-21, CLRS p. 313]
     3. rotate_left / rotate_right, subtree style   [slides 20-21]
@@ -139,11 +83,6 @@ def disbalance(node):
 # =====================================================================
 # 2. CLRS STYLE, WITH PARENT POINTERS [CLRS 13.2 p. 313]
 # =====================================================================
-# left_rotate(tree, lower_top), slide 21 read right to left:
-#   lower_top: x, the node that goes DOWN to the left
-#   riser: y, x's right child, which comes UP
-#   middle: B, y's left subtree, which moves across to x's right
-#
 # CLRS LEFT-ROTATE(T, x), steps in the same order:
 #   1. y = x.right
 #   2. x.right = y.left              <- B moves across
@@ -153,8 +92,7 @@ def disbalance(node):
 #  10. y.left = x
 #  11. x.p = y
 #
-# right_rotate is the mirror image (CLRS Exercise 13.2-1): swap every left and
-# right.
+# Notes: [[Rotations — Code Notes#2. CLRS style, with parent pointers]] (variables, right_rotate)
 
 def left_rotate(tree, lower_top):
     riser = lower_top.right
@@ -193,15 +131,7 @@ def right_rotate(tree, lower_top):
 # =====================================================================
 # 3. SUBTREE STYLE, RETURNING THE NEW TOP [slides 20-21]
 # =====================================================================
-# rotate_right(old_top): slide 20, y => x
-#   old_top: y, goes down to the right
-#   new_top: x, y's left child, comes up
-#   x's right subtree B becomes y's left subtree
-#
-# rotate_left(old_top): slide 21, the mirror image.
-#
-# The caller writes   parent.left = rotate_right(parent.left)   or similar.
-# Parent pointers are not maintained here.
+# Notes: [[Rotations — Code Notes#3. Subtree style, returning the new top]] (variables, how the caller uses it)
 
 def rotate_right(old_top):
     new_top = old_top.left

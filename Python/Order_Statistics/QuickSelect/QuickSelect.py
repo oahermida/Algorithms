@@ -1,95 +1,12 @@
 r"""
 QUICKSELECT -- the k-th smallest element in expected O(n)
-=========================================================
+Lecture 6-7, slides 3-9; CLRS 3rd ed., section 9.2 (p. 216).
 
-Advanced Algorithms, Lecture 6-7 (Ivan Bliznets), slides 3-9 -- the same deck as
-the heap file (../../Data_Structures/08_Heap.py). Also CLRS 3rd ed., section 9.2
-(RANDOMIZED-SELECT, p. 216) and section 7.1 (PARTITION, p. 171).
+Notes: [[QuickSelect — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/QuickSelect — Code Notes.md
 
-    k-th smallest element [slide 6]
-        - It is trivial to find the minimum or maximum element in an array
-          using O(n) time algorithm.
-        - k-th smallest element can be easily found in O(kn) time or in
-          O(n log n) time.
-        - Can we find the n/2-smallest (i.e. median) element in O(n) time?
-        - Can we find the k-th smallest element in O(n) time for any k?
-
-The "easy" O(n log n) answer is: sort, then read position k-1. QuickSelect does
-better by NOT sorting. It partitions once, like quicksort, and then throws away
-the side that cannot contain the answer. Quicksort recurses into both sides;
-QuickSelect recurses into one. That single difference turns n log n into n.
-
-
-THE SLIDE'S PSEUDOCODE [slide 7]
---------------------------------
-    QUICKSELECT(Array A, int l, int r, int k)
-    if l = r then
-        return A[l]
-    end if
-    p <- random number from {A[l], A[l+1], ..., A[r]}
-    Split array A[l : r] into A[l : j-1], p = A[j], A[j+1, r]
-    if k = j - l + 1 then
-        return A[l]                       <- SLIDE TYPO, see below
-    end if
-    if k < j - l + 1 then
-        QuickSelect(A, l, j-1, k)
-    else
-        QuickSelect(A, j+1, r, k - (j - l + 1))
-    end if
-
-Three things to notice:
-
-    k IS RELATIVE TO THE PIECE. "k-th smallest" always means k-th smallest of
-    A[l..r], not of the whole array. That is why the right-hand call subtracts
-    j - l + 1: everything left of the pivot, plus the pivot, is smaller, so it
-    has been "used up".
-
-    j - l + 1 IS THE PIVOT'S RANK. After the split the pivot sits at position j,
-    and there are j - l elements to its left inside the piece. So the pivot is
-    the (j - l + 1)-th smallest of the piece. CLRS calls this number k and the
-    wanted rank i; the slide calls the wanted rank k. This file calls them
-    `pivot_rank` and `wanted_rank` so the two cannot be mixed up.
-
-    THE TYPO. When the ranks match, the answer is the PIVOT, which is A[j], not
-    A[l]. CLRS line 6 returns A[q] (its name for j). A[l] is just whatever
-    landed at the left edge of the piece. The code below returns A[j].
-
-The slide says "split" without saying how. The lecture never shows a partition
-procedure (quicksort was covered in Programming Fundamentals -- Lecture 1,
-slide 11). This file uses CLRS's Lomuto PARTITION (section 7.1), with the random
-pivot swapped to the end first, which is exactly CLRS's RANDOMIZED-PARTITION
-(section 7.3, p. 179). ../../Sorting/Quicksort/Quicksort.py uses the same one.
-
-
-WHY EXPECTED O(n) [slide 8]
----------------------------
-    - After each step with probability at least 1/2 size of the array
-      decreases by one quarter.
-    - If this was happening always we would have the following recurrence:
-      T(n) <= T(3n/4) + O(n).
-    - By master theorem we have that T(n) = O(n).
-
-Why "probability at least 1/2": a random pivot lands in the middle half of the
-sorted order (between the 25% and 75% marks) half the time. Then both sides have
-at most 3n/4 elements, so whichever side we keep, a quarter is gone.
-
-Why T(n) <= T(3n/4) + O(n) is linear: the work per level shrinks geometrically,
-    n + 3n/4 + 9n/16 + ...  =  n * 1 / (1 - 3/4)  =  4n.
-The master theorem says the same: a = 1, b = 4/3, f(n) = n, and n^(log_b a) =
-n^0 = 1, so f wins (case 3) and T(n) = Theta(n).
-
-    Avoid chances [slide 9]
-        - Running time of the QuickSelect algorithm depends on randomness
-          that might be undesirable in some applications.
-
-The WORST case is still O(n^2): if every pivot happens to be the largest
-element, each round removes only one element. Section 5 forces that by picking
-the last element as pivot on sorted input. The fix with a guaranteed O(n) is
-median of medians: ../Median_of_Medians/Median_of_Medians.py.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. partition             CLRS 7.1 (Lomuto), the "split" step
     2. randomized_partition  CLRS 7.3, random pivot then partition
     3. quick_select          the slide 7 algorithm, typo fixed
@@ -122,19 +39,7 @@ stats = {"comparisons": 0}
 #     7 exchange A[i + 1] with A[r]
 #     8 return i + 1
 #
-# values: the list being rearranged in place
-# low, high: the piece being split, both ends included (CLRS p, r)
-# pivot: the value everything is compared with; always values[high] (CLRS x)
-# small_end: last position of the "<= pivot" region (CLRS i)
-# scan: the position being looked at (CLRS j)
-#
-# While scanning, the piece is four regions:
-#   low .. small_end          <= pivot
-#   small_end+1 .. scan-1     >  pivot
-#   scan .. high-1            not looked at yet
-#   high                      the pivot itself
-# At the end the pivot swaps into small_end + 1, between the two regions, which
-# is its final sorted position. That position is returned.
+# Notes: [[QuickSelect — Code Notes#1. Partition — the "split" step]] (variables, the four regions)
 
 def partition(values, low, high):
     pivot = values[high]
@@ -156,10 +61,7 @@ def partition(values, low, high):
 #     2 exchange A[r] with A[i]
 #     3 return PARTITION(A, p, r)
 #
-# chosen: a random position in low..high; its value becomes the pivot
-#
-# partition always uses the LAST element as pivot, so picking a random pivot
-# just means swapping a random element into the last spot first.
+# Notes: [[QuickSelect — Code Notes#2. Random pivot]] (variables)
 
 def randomized_partition(values, low, high):
     chosen = random.randint(low, high)
@@ -170,22 +72,7 @@ def randomized_partition(values, low, high):
 # =====================================================================
 # 3. QUICKSELECT [slide 7; CLRS RANDOMIZED-SELECT, p. 216]
 # =====================================================================
-# values: the list, rearranged in place as it goes
-# low, high: the piece still being searched (slide l, r)
-# wanted_rank: which smallest we want, counted from 1, RELATIVE to the piece
-#              (slide k, CLRS i)
-# pivot_position: where the pivot ended up after the split (slide j, CLRS q)
-# pivot_rank: the pivot's rank inside the piece, j - l + 1 (CLRS k)
-#
-# Three outcomes after the split:
-#   wanted_rank == pivot_rank  -> the pivot is the answer
-#   wanted_rank <  pivot_rank  -> the answer is left of the pivot, same rank
-#   wanted_rank >  pivot_rank  -> the answer is right of the pivot; the left
-#                                 side and the pivot are pivot_rank elements
-#                                 already passed, so subtract them
-#
-# split_pivot is the partition to use. It defaults to the random one; section 5
-# passes the plain last-element partition to show the worst case.
+# Notes: [[QuickSelect — Code Notes#3. Quickselect]] (variables, the three outcomes)
 
 def quick_select(values, low, high, wanted_rank, split_pivot=randomized_partition):
     if low == high:  # one element left: it must be the answer
@@ -222,14 +109,7 @@ def median(values):
 # =====================================================================
 # 5. HOW MUCH WORK -- slide 8 and slide 9, measured
 # =====================================================================
-# Random pivot on shuffled input: comparisons / n stays roughly constant as n
-# grows. That is what "expected O(n)" looks like. (For the median the expected
-# count is about 3.4n; CLRS 9.2 proves an upper bound of 4n.)
-#
-# Last-element pivot on sorted input, asking for the minimum: the pivot is
-# always the maximum of the piece, so each round removes only that one element.
-# Total comparisons (n-1) + (n-2) + ... + 1 = n(n-1)/2. That is slide 9's
-# "depends on randomness": the algorithm is the same, only the luck is gone.
+# Notes: [[QuickSelect — Code Notes#5. How much work — slide 8 and slide 9, measured]]
 
 def count_comparisons(values, wanted_rank, split_pivot):
     stats["comparisons"] = 0
@@ -253,14 +133,7 @@ def show_work():
 # =====================================================================
 # 6. SLIDE 3: WHERE TO OPEN THE SHOP
 # =====================================================================
-#     BEST PLACE
-#     Input:    A set X of real numbers x1, x2, ..., xn.
-#     Question: Find y with the minimum value of sum |y - xi|.
-#     The best such place is the median of the set.
-#
-# Moving the shop one step right gets it one step closer to every house on its
-# right and one step further from every house on its left. At the median the
-# two groups are the same size, so no step helps.
+# Notes: [[QuickSelect — Code Notes#6. Slide 3 — where to open the shop]] (problem statement, why the median)
 
 def total_distance(shop, houses):
     return sum(abs(shop - house) for house in houses)

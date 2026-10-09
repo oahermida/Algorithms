@@ -1,141 +1,12 @@
 r"""
 MINIMUM-COST DOMINATING SET -- IN A PATH, AND IN A 2 x n GRID
-=============================================================
+Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slides 24-29.
 
-Advanced Algorithms, Lecture 4-5 (Ivan Bliznets): the path on slides 24-28,
-the 2 x n grid on slide 29. Lecture 6-7 ends with the 2 x n grid again
-(slide 49/49). Slides 28 and 29, and Lecture 6-7 slide 49, have a title and
-nothing else -- the lecturer worked them on the board. So the path DP below
-is the slides' own; the 2 x n grid DP is built here by the same idea, and is
-not quoted from any slide. No CLRS section covers this problem.
+Notes: [[Dominating Set — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Dominating Set — Code Notes.md
 
-    DOMINATING SET IN A PATH [slide 24]
-        Input:   A path P with a specified positive cost for each vertex.
-        Output:  Choose a subset of vertices S with a minimum cost such that
-                 for each v in P: either v in S or there is u such that u in S
-                 and u, v are neighbours.
-
-        Example: 7 -- 2 -- 1 -- 3 -- 5 -- 10 -- 6 -- 17 -- 9 -- 4
-                 Solution: S = {2, 3, 6, 4}.
-
-The numbers in the example are the COSTS, and the solution lists the costs of
-the chosen vertices: 2 + 3 + 6 + 4 = 15.
-
-    7 -- 2 -- 1 -- 3 -- 5 -- 10 -- 6 -- 17 -- 9 -- 4
-        [2]       [3]           [6]            [4]
-    each [chosen] vertex covers itself and its two neighbours
-
-
-FIRST TRY: TWO STATES [slides 25-26]
-------------------------------------
-    A[i] - cost of the cheapest set Si (subset of Pi) that dominates all
-           vertices in Pi.                        (Pi = the first i vertices)
-    Is it a good subproblem?
-
-No: it forgets whether vi is in S, and the next vertex needs to know. So the
-slide adds one bit:
-
-    A[i, 0] equals to the cost of the cheapest Si that dominates Pi and vi not in Si,
-    A[i, 1] equals to the cost of the cheapest Si that dominates Pi and vi in Si?
-    Is it true that: A[i+1, 1] = c[i+1] + min{A[i, 0], A[i, 1]}?
-
-Still no. Both states demand that vi is ALREADY dominated inside Pi. But vi can
-also be dominated by v(i+1), from the right. That case has no state, so it is
-lost. Slide 26 shows it on the path 3 -- 10 -- 2 -- 1: the best set is {3, 1}
-(cost 4), where the vertex costing 2 is covered by its RIGHT neighbour.
-Section 3 runs the two-state version on it: it answers 5.
-
-
-THE FIX: THREE STATES [slide 27]
---------------------------------
-    A[i, 0]  = cheapest Si that dominates Pi    and vi not in Si
-    A[i, 0^] = cheapest Si that dominates Pi-1  and vi not in Si
-    A[i, 1]  = cheapest Si that dominates Pi    and vi in Si
-
-The new state 0^ ("zero hat") is "vi is not chosen and may still be
-uncovered -- v(i+1) must cover it". Per vertex:
-
-        1    chosen
-        0    not chosen, already covered from the left
-        0^   not chosen, waiting to be covered from the right
-
-    A[i+1, 0]  = A[i, 1]                         v(i+1) is covered only if vi is chosen
-    A[i+1, 0^] = min{ A[i, 1], A[i, 0] }         vi must be fine on its own, not 0^
-    A[i+1, 1]  = c[i+1] + min{ A[i, 1], A[i, 0], A[i, 0^] }
-                                                 choosing v(i+1) covers vi too,
-                                                 so all three states are allowed
-
-    "We have a linear time algorithm."  [slide 27]
-
-Drawn as arrows from column i to column i+1:
-
-        A[i, 1]  ----------.----------.--------> A[i+1, 0]
-                            \          \
-        A[i, 0]  ------------+----------+------> A[i+1, 0^]
-                              \          \
-        A[i, 0^] --------------+----------+----> A[i+1, 1]  (+ c[i+1])
-
-        0^ can only go to 1: a waiting vertex MUST be covered by the next one.
-
-The slide does not write the start or the answer. They are:
-
-    base:    A[1, 0] = infinity   (v1 alone cannot be covered without choosing it)
-             A[1, 0^] = 0
-             A[1, 1] = c[1]
-    answer:  min{ A[n, 0], A[n, 1] }    (0^ is not allowed at the end: no v(n+1))
-
-
-TYPOS IN THE SLIDES
--------------------
-    - Slide 27 writes "A[i+1, 1] = c[i] + min{...}". It must be c[i+1]: the
-      vertex being chosen is v(i+1).
-    - Slide 27 drops commas: "min{A[i, 1]A[i, 0]}" means min{A[i, 1], A[i, 0]}.
-    - Slide 26 says "A[2, 1] = 4, A[2, 0] = 10, however the final answer is 3".
-      With the slide's own two-state definitions on 3 -- 10 -- 2 -- 1 the
-      values are A[2, 1] = 13, A[2, 0] = 3, and the true answer is 4. I could not find a
-      reading that gives the slide's numbers. Section 3 prints the real ones.
-      The point of the slide still stands: two states give the wrong answer.
-
-
-THE 2 x n GRID [slide 29 -- board only]
----------------------------------------
-Two rows, n columns. Each cell is a vertex with a cost. Neighbours are up,
-down, left and right.
-
-        column:   1    2    3    4
-        top     [ ] - [ ] - [ ] - [ ]
-                 |     |     |     |
-        bottom  [ ] - [ ] - [ ] - [ ]
-
-The same idea, one COLUMN at a time instead of one vertex. Each of the two
-cells in the current column gets one of the path's three states:
-
-        1    chosen
-        0    not chosen, covered (by its column partner or by the left)
-        0^   not chosen, still waiting -- the cell to its RIGHT must be chosen
-
-A column state is a pair (top state, bottom state): 3 x 3 = 9 states.
-
-    T[k, (top, bottom)] = cheapest choice in columns 1..k that covers every
-                          cell in columns 1..k-1, and leaves column k in
-                          exactly the states (top, bottom)
-
-Going from column k to column k+1, try all 4 ways to choose cells in column
-k+1 (none, top, bottom, both):
-
-    - a 0^ cell in column k needs the cell to its right chosen, else skip
-    - a new cell is 1 if chosen; 0 if its partner is chosen or its left
-      neighbour is 1; otherwise 0^
-    - cost = T[k, old state] + costs of the newly chosen cells
-
-    answer: min of T[n, state] over states with no 0^
-
-9 states x 4 choices per column: O(n) time. The path is the 1 x n case of
-the same scheme.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_dominating_set   every subset of vertices, any graph
     2. path_two_states              the broken first try       [slides 25-26]
     3. path_dominating_table        the lecture's three states [slide 27]
@@ -169,14 +40,7 @@ PATH_STATES = (COVERED, WAITING, CHOSEN)
 # =====================================================================
 # 1. BRUTE FORCE -- every subset of vertices
 # =====================================================================
-# Works on any graph, so both the path and the grid are checked by it.
-#
-# costs: cost of each vertex, vertex numbers 0 .. count-1
-# neighbours: neighbours[vertex] is the list of vertices next to it
-# subset_size: how many vertices this round chooses
-# chosen: one particular choice of that many vertices
-#
-# O(2^n * n): only for testing.
+# Notes: [[Dominating Set — Code Notes#1. Brute force — every subset of vertices]] (variables)
 
 def is_dominating(chosen, neighbours):
     chosen_set = set(chosen)
@@ -221,13 +85,7 @@ def path_two_states(costs):
 # =====================================================================
 # 3. THE LECTURE'S ALGORITHM -- three states [slide 27]
 # =====================================================================
-# costs: c[1..n], stored from index 0
-# table: A; table[position][state] for state in 0, 0^, 1
-# position: the vertex being filled, 0 .. n-1 (vertex v(position+1))
-# previous: the row of the vertex before it
-#
-# Uses c[i+1], not the slide's c[i] (see the typo note).
-# O(n) time and space.
+# Notes: [[Dominating Set — Code Notes#3. The lecture's algorithm — three states]] (variables)
 
 def path_dominating_table(costs):
     table = [{COVERED: INFINITY, WAITING: 0, CHOSEN: costs[0]}]  # base case, v1
@@ -247,18 +105,7 @@ def path_dominating_table(costs):
 # =====================================================================
 # 4. RESTORE THE CHOSEN VERTICES -- walking back on the table
 # =====================================================================
-# Start at the last vertex, in the state that gave the answer. At each step,
-# ask which state of the vertex before could have produced this cell:
-#
-#   COVERED  came from CHOSEN only
-#   WAITING  came from CHOSEN or COVERED
-#   CHOSEN   came from any of the three, plus this vertex's cost
-#
-# Pick a predecessor whose value matches. Every vertex in state CHOSEN goes in
-# the set.
-#
-# state: the state of the vertex at `position` on the optimal route
-# allowed_before: which states of the vertex before could lead to `state`
+# Notes: [[Dominating Set — Code Notes#4. Restore the chosen vertices — walking back on the table]] (variables, predecessor states)
 
 def restore_path(costs, table):
     last = table[len(costs) - 1]
@@ -306,14 +153,7 @@ def path_rolling(costs):
 # =====================================================================
 # 6. THE 2 x n GRID [slide 29, board only]
 # =====================================================================
-# grid_costs: grid_costs[row][column], row 0 = top, row 1 = bottom
-# table: table[column][(top_state, bottom_state)] = cheapest cost, see the
-#        docstring; missing state = impossible
-# choice: which cells of the new column are chosen, as (top?, bottom?)
-# old_states / new_states: the column states before and after the step
-#
-# column_states_after works out the new pair of states from the choice and the
-# states of the column to the left (None for the first column).
+# Notes: [[Dominating Set — Code Notes#6. The 2 x n grid]] (variables)
 
 CHOICES = ((False, False), (True, False), (False, True), (True, True))
 
@@ -368,13 +208,7 @@ def grid_dominating_table(grid_costs):
 # =====================================================================
 # 7. RESTORE THE CHOSEN CELLS IN THE GRID
 # =====================================================================
-# Same walk-back as the path. A column state already says which cells are
-# chosen (the ones in state CHOSEN), so only the state of the column to the
-# left has to be found: any old state that allows this choice, leads to this
-# state, and has the matching cost.
-#
-# states: the state pair of the current column on the optimal route
-# chosen_cells: the answer, as (row, column) pairs
+# Notes: [[Dominating Set — Code Notes#7. Restore the chosen cells in the grid]] (variables)
 
 def restore_grid(grid_costs, table):
     column_count = len(grid_costs[0])

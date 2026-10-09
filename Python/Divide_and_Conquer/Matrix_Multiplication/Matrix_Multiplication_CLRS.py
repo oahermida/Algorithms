@@ -1,87 +1,12 @@
 """
 MATRIX MULTIPLICATION THE CLRS WAY  (recursive, Strassen)
-=========================================================
+CLRS 3rd ed., section 4.2 (pp. 75-82).
 
-CLRS (3rd ed.) section 4.2, "Strassen's algorithm for matrix multiplication",
-pp. 75-82. The slide-based version, with M1-M7 and padding for any size, is
-Matrix_Multiplication.py in this folder. This file follows the book instead:
-its procedure names, its S1-S10 and P1-P7, and its index calculations.
+Notes: [[Matrix Multiplication CLRS — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Matrix Multiplication CLRS — Code Notes.md
 
-
-1. SQUARE-MATRIX-MULTIPLY-RECURSIVE  (CLRS p. 77) -- Theta(n^3)
----------------------------------------------------------------
-    SQUARE-MATRIX-MULTIPLY-RECURSIVE(A, B)
-     1  n = A.rows
-     2  let C be a new n x n matrix
-     3  if n == 1
-     4      c11 = a11 * b11
-     5  else partition A, B, and C as in equations (4.9)
-     6      C11 = SMMR(A11, B11) + SMMR(A12, B21)
-     7      C12 = SMMR(A11, B12) + SMMR(A12, B22)
-     8      C21 = SMMR(A21, B11) + SMMR(A22, B21)
-     9      C22 = SMMR(A21, B12) + SMMR(A22, B22)
-    10  return C
-
-(SMMR = SQUARE-MATRIX-MULTIPLY-RECURSIVE, shortened to fit.)
-
-8 recursive products, 4 additions of n/2 x n/2 matrices:
-    T(n) = 8T(n/2) + Theta(n^2) = Theta(n^3)            (4.17), p. 78
-"No faster than the straightforward SQUARE-MATRIX-MULTIPLY procedure."
-
-
-2. STRASSEN'S METHOD  (CLRS pp. 79-82) -- Theta(n^lg 7) = O(n^2.81)
-------------------------------------------------------------------
-The book gives Strassen as four steps, not pseudocode (writing the pseudocode
-is Exercise 4.2-2, p. 82):
-
-    1. Divide A, B and C into n/2 x n/2 submatrices, as in (4.9).
-    2. Create 10 matrices S1..S10, each a sum or difference of two of them:
-           S1 = B12 - B22      S6  = B11 + B22
-           S2 = A11 + A12      S7  = A12 - A22
-           S3 = A21 + A22      S8  = B21 + B22
-           S4 = B21 - B11      S9  = A11 - A21
-           S5 = A11 + A22      S10 = B11 + B12
-    3. Recursively compute seven products P1..P7:
-           P1 = A11 * S1       P5 = S5 * S6
-           P2 = S2  * B22      P6 = S7 * S8
-           P3 = S3  * B11      P7 = S9 * S10
-           P4 = A22 * S4
-    4. Combine them into the four quarters of C:
-           C11 = P5 + P4 - P2 + P6
-           C12 = P1 + P2
-           C21 = P3 + P4
-           C22 = P5 + P1 - P3 - P7
-
-One fewer recursive product, paid for with more additions:
-    T(n) = 7T(n/2) + Theta(n^2) = Theta(n^lg 7)         (4.18), p. 79
-
-
-INDEX CALCULATIONS -- "partition without copying"  (CLRS p. 77)
----------------------------------------------------------------
-Line 5 of the pseudocode "glosses over one subtle but important
-implementation detail". Copying out 12 new n/2 x n/2 matrices costs
-Theta(n^2). Instead, the book names a submatrix by a range of rows and a range
-of columns of the original matrix, so partitioning takes Theta(1).
-
-That is the Submatrix class below: a window onto a matrix, given by where its
-top-left corner sits and how wide it is. Its four quarters are new windows
-onto the SAME numbers. Nothing is copied.
-
-Strassen's S1..S10 are new matrices -- the book builds them in Theta(n^2) in
-step 2. Each one gets wrapped in a window of its own before going into a
-recursive call.
-
-
-TWO DIFFERENCES FROM THE BOOK
------------------------------
-- Python counts from 0, CLRS from 1. The book's c11 is answer[0][0] here.
-- CLRS assumes n is an exact power of 2 (p. 76), so every split halves
-  evenly. This file checks that and refuses anything else. Exercise 4.2-3
-  (other sizes) is answered in Matrix_Multiplication.py by zero padding.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     0. Submatrix (the index-calculation window), adding, subtracting
     1. square_matrix_multiply              triple loop, the reference answer
     2. square_matrix_multiply_recursive    8 products, Theta(n^3)
@@ -182,14 +107,7 @@ def square_matrix_multiply(matrix_a, matrix_b):
 # =====================================================================
 # 2. SQUARE-MATRIX-MULTIPLY-RECURSIVE  (CLRS p. 77) -- Theta(n^3)
 # =====================================================================
-# window_a, window_b: Submatrix windows onto A and B (the book's A and B)
-# a_11 .. a_22: the quarters of A, as windows (A11 .. A22)
-# b_11 .. b_22: the quarters of B, as windows (B11 .. B22)
-# half: n/2, where each quarter of C starts
-# answer: the new n x n matrix C
-#
-# Each line 6-9 makes two recursive products and adds them. The products come
-# back as plain matrices, so they are wrapped in windows before adding.
+# Notes: [[Matrix Multiplication CLRS — Code Notes#2. SQUARE-MATRIX-MULTIPLY-RECURSIVE — Theta(n³)]] (variables)
 
 def square_matrix_multiply_recursive(window_a, window_b):
     size = window_a.size  # line 1: n = A.rows
@@ -221,15 +139,7 @@ def multiply_recursive(matrix_a, matrix_b):
 # =====================================================================
 # 3. STRASSEN'S METHOD  (CLRS pp. 79-82) -- Theta(n^lg 7)
 # =====================================================================
-# window_a, window_b: Submatrix windows onto A and B
-# a_11 .. a_22, b_11 .. b_22: their quarters, as windows (step 1)
-# sum_1 .. sum_10: the book's S1 .. S10, new n/2 x n/2 matrices (step 2)
-# product_1 .. product_7: the book's P1 .. P7, one recursive call each (step 3)
-# half: n/2, where each quarter of C starts
-# answer: the new n x n matrix C, filled in step 4
-#
-# Base case as CLRS says on p. 79: at n = 1, "a simple scalar multiplication,
-# just as in line 4 of SQUARE-MATRIX-MULTIPLY-RECURSIVE".
+# Notes: [[Matrix Multiplication CLRS — Code Notes#3. Strassen's method — Theta(n to the lg 7)]] (variables, base case)
 
 def strassen_recursive(window_a, window_b):
     size = window_a.size

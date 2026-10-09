@@ -1,117 +1,12 @@
 r"""
 LONGEST COMMON SUBSEQUENCE (LCS)
-================================
+Lecture 4-5, slides 16-22; CLRS 3rd ed., section 15.4 (pp. 390-397).
 
-Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slides 16-22. Also CLRS
-3rd edition, section 15.4, pages 390-397 (PDF pages 411-418).
+Notes: [[LCS — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/LCS — Code Notes.md
 
-    LCS [slide 16]
-        Input:     Two sequences X = [x1, x2, ... xm], Y = [y1, y2, ..., yn].
-        Question:  Longest common subsequence.
-
-        Example:   X = ACCGTTGAC,  Y = ACAACTTGAGTA
-                   Output: ACCTTGA.
-
-A SUBSEQUENCE keeps the order but may skip letters. It does not have to be one
-unbroken block. That is the "non-contiguous" in the slide's title.
-
-    X = A C C G T T G A C          keep positions 1 2 3 5 6 7 8
-        A C C . T T G A .      ->  ACCTTGA
-
-    Y = A C A A C T T G A G T A    keep positions 1 2 5 6 7 8 9
-        A C . . C T T G A . . .  ->  ACCTTGA
-
-
-THE PREFIXES AND THE TABLE [slide 17]
--------------------------------------
-    Denote Xi = x1, x2, ..., xi,  Yj = y1, y2, ..., yj.
-    Hence, Xm = X, Yn = Y.
-    Denote by c[i, j] the length of longest common subsequence of sequences
-    Xi, Yj.
-
-So c[i, j] answers a smaller question: "how long is the LCS if I only look at
-the first i letters of X and the first j letters of Y?" The full answer is the
-bottom-right cell, c[m, n].
-
-
-THE THREE CASES [slides 17-18; CLRS Theorem 15.1, page 392]
------------------------------------------------------------
-    Let Z = z1, z2, ..., zk be some longest common subsequence of X and Y.
-      1. xm = yn and zk = xm then Zk-1 is the LCS of Xm-1 and Yn-1
-      2. xm != yn and zk != xm then Z is LCS of Xm-1 and Yn
-      3. xm != yn and zk != yn then Z is LCS of Xm and Yn-1
-
-Look only at the LAST letter of each prefix:
-
-    the last letters MATCH       -> that letter ends the LCS. Drop it from
-                                    both and solve the rest.
-    the last letters DIFFER      -> at least one of them is not in the LCS.
-                                    Try dropping each one, keep the better.
-
-That gives the recurrence [slide 18]:
-
-                 | 0                              if i = 0 or j = 0
-        c[i,j] = | c[i-1, j-1] + 1                if i, j > 0 and xi = yj
-                 | max{ c[i, j-1], c[i-1, j] }    if i, j > 0 and xi != yj
-
-One cell, drawn:
-
-                     j-1         j
-                 +-----------+-----------+
-          i-1    | c[i-1,j-1]| c[i-1,j]  |
-                 +-----------+-----------+
-           i     | c[i,j-1]  |  c[i,j]   |
-                 +-----------+-----------+
-
-        match:     c[i,j] = 1 + the cell diagonally up-left
-        no match:  c[i,j] = the bigger of the cell above and the cell left
-
-Every cell reads only cells above it or to its left. So filling row by row,
-left to right, always has the inputs ready.
-
-
-THE PSEUDOCODE [slide 19]
--------------------------
-    LCS(X, Y)
-    m = length(X), n = length(Y)
-    Create matrix c of size m + 1 x n + 1 with 0 values
-    for i in {1, .., m} do
-       for j in {1, .., n} do
-           if xi = yj then
-               c[i, j] = c[i - 1, j - 1] + 1
-           else
-               c[i, j] = max{c[i - 1, j], c[i, j - 1]}
-    return R[n]
-
-Time O(mn). Space O(mn) for the table.
-
-
-TYPOS IN THE SLIDES
--------------------
-    - Slide 18 writes the max as "max{c[i, j-1], c[i-1], j}". The bracket is
-      in the wrong place. It means max{c[i, j-1], c[i-1, j]}.
-    - Slide 18 says the answer is "c[n, m]". The table is (m+1) x (n+1) with i
-      running over X, so the answer is c[m, n].
-    - Slide 19 ends with "return R[n]". There is no R. It means return c[m, n].
-    - Slide 16 writes "Yn" with a capital Y inside the list y1, ..., Yn. It is
-      just yn.
-None of these change the method. The slide 21 table is correct, and section 6
-reprints it from the code.
-
-
-THE BOOK VS THE SLIDES
-----------------------
-CLRS fills a second table b of arrows ("diagonal", "up", "left") and prints
-the LCS from it with PRINT-LCS (page 395). The slides only build c. CLRS also
-notes (page 396) that b is not needed: the arrow can be worked out again from
-c and the two letters. Section 3 does exactly that, so it needs only c.
-
-CLRS breaks ties ("up" when c[i-1, j] >= c[i, j-1]). Section 3 uses the same
-rule, so it prints CLRS's own answer BCBA for Figure 15.8.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_lcs         every subsequence of X, O(n * 2^m)
     2. lcs_table               the lecture's algorithm             [slide 19]
     3. restore_lcs             the actual subsequence, walking back on c
@@ -138,13 +33,7 @@ CLRS_Y = "BDCABA"  # CLRS Figure 15.8, answer BCBA
 # =====================================================================
 # 1. BRUTE FORCE -- every subsequence of the first sequence
 # =====================================================================
-# Try every subsequence of first_sequence, longest first. Return the first one
-# that is also a subsequence of second_sequence.
-#
-# subsequence_length: how many letters this round keeps
-# kept_positions: which positions of first_sequence are kept
-#
-# O(n * 2^m): 2^m subsequences, each checked in O(n). Only for testing.
+# Notes: [[LCS — Code Notes#1. Brute force — every subsequence of the first sequence]] (variables, running time)
 
 def is_subsequence(candidate, sequence):
     position = 0
@@ -166,17 +55,7 @@ def brute_force_lcs(first_sequence, second_sequence):
 # =====================================================================
 # 2. THE LECTURE'S ALGORITHM [slide 19]
 # =====================================================================
-# first_sequence: X, length m
-# second_sequence: Y, length n
-# table: c; table[row][column] is the LCS length of the first `row` letters
-#        of X and the first `column` letters of Y
-# row: i in the slide, 1 .. m
-# column: j in the slide, 1 .. n
-#
-# Row 0 and column 0 stay 0: an empty prefix has no common subsequence.
-# Python strings start at 0, so letter x_i is first_sequence[row - 1].
-#
-# O(mn) time and space.
+# Notes: [[LCS — Code Notes#2. The lecture's algorithm]] (variables, indexing)
 
 def lcs_table(first_sequence, second_sequence):
     row_count = len(first_sequence)
@@ -196,18 +75,7 @@ def lcs_table(first_sequence, second_sequence):
 # =====================================================================
 # 3. RESTORE THE SUBSEQUENCE -- walking back on c
 # =====================================================================
-# The table gives a length. To get the letters, start at c[m, n] and ask which
-# case of the recurrence made this cell:
-#
-#   letters match           -> this letter is in the LCS. Take it, go diagonal.
-#   c[i-1, j] >= c[i, j-1]  -> the value came from above. Go up.
-#   otherwise               -> the value came from the left. Go left.
-#
-# row / column: where the walk stands now
-# letters: the LCS letters found so far, collected back to front
-#
-# Same tie rule as CLRS ("up" on a tie), so CLRS's example gives BCBA.
-# O(m + n): every step moves up, left, or both.
+# Notes: [[LCS — Code Notes#3. Restore the subsequence — walking back on c]] (walk-back rule, variables)
 
 def restore_lcs(first_sequence, second_sequence, table):
     letters = []
@@ -231,16 +99,7 @@ def restore_lcs(first_sequence, second_sequence, table):
 # =====================================================================
 # 4. TWO ROWS INSTEAD OF THE GRID [CLRS page 396, Exercise 15.4-4]
 # =====================================================================
-# Each row reads only itself and the row above. So keep two rows and swap.
-#
-# previous_row: row i-1 of the table
-# current_row: row i, being filled
-#
-# Put the SHORTER sequence along the columns, so the rows are as short as
-# possible: O(min(m, n)) space.
-#
-# Like every rolling version in this folder, it gives up restoring: the old
-# rows are gone, so the walk-back has nothing to walk on.
+# Notes: [[LCS — Code Notes#4. Two rows instead of the grid]] (variables, space)
 
 def lcs_length_rolling(first_sequence, second_sequence):
     if len(second_sequence) > len(first_sequence):

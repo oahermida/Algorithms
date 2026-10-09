@@ -1,134 +1,12 @@
 r"""
 DYNAMIC PROGRAMMING OVER TREES -- THE BEST PARTY
-================================================
+Lecture 4-5, slides 39-52; Erickson, Algorithms, section 3.10.
 
-Advanced Algorithms, Lecture 4-5 (Ivan Bliznets), slides 39-52. Also Erickson,
-*Algorithms*, section 3.10 "Dynamic Programming on Trees" (maximum independent
-set in a tree). No CLRS section; CLRS Problem 15-6 "Planning a company party"
-is the same story as an exercise.
+Notes: [[Tree DP — Code Notes]]
+  ~/Documents/Obsidian/Uni/100 - Pre-Master/1A - Logic & Algorithms/
+  Advanced Algorithms/Code Notes/Tree DP — Code Notes.md
 
-    BEST PARTY [slide 39]
-        HR department decided to organize a party. Studies showed that people
-        feel uncomfortable if their immediate boss is also at the same party.
-        It is known that each employee has at most one boss. Each person has a
-        value that indicate how happy he will be if he attends the party. Your
-        job as a director of the HR department invite some employees such that
-        sum of their happiness is maximum.
-
-"At most one boss" makes the company a TREE: the boss is the parent. "Not with
-your immediate boss" means no parent and child both invited. A set of vertices
-with no edge inside it is an INDEPENDENT SET. So the problem is: the
-maximum-weight independent set in a tree [slides 40-41].
-
-    The slide's company [slides 40-41]:
-
-                          Alice 10  (v1)
-                       /             \
-               Jonh 7 (v2)          Hans 2 (v5)
-               /       \             /        \
-         Ivan 1 (v3)  Kate 12 (v4)  Maria 2 (v6)  Jesper 3 (v8)
-                                     |
-                                    Bob 17 (v7)
-
-    (Slide 40 spells it "Jonh". Kept as written.)
-
-In a general graph this problem is NP-hard. On a tree it is O(n).
-
-
-THE SUBTREE [slide 42]
-----------------------
-    For each vertex t denote by Tt a subtree containing t and all its
-    descendants.
-
-So T(v2) is Jonh's department: Jonh, Ivan, Kate. The subproblem is "the best
-party inside one department".
-
-
-THE TWO STATES [slide 43]
--------------------------
-    D[v, 0] - maximum independent set in Tv that does not contain v, i.e. the
-              best party in the department that is headed by v and v does not
-              come.
-    D[v, 1] - maximum independent set in Tv that contains v, i.e. the best
-              party in the department that is headed by v and v comes.
-    h(v)    - weight of vertex v, i.e. happiness of employee v.
-
-    If v is a leaf then D[v, 0] = 0 and D[v, 1] = h(v).
-
-Same trick as the dominating set in a path: one extra bit (does the head come?)
-is exactly what the parent needs to know.
-
-
-THE RECURRENCE [slide 45]
--------------------------
-    Let u be a vertex and u1, u2, ..., uk its children then:
-      D[u, 1] = h(u) + D[u1, 0] + D[u2, 0] + ... + D[uk, 0]
-      D[u, 0] = max{D[u1, 0], D[u1, 1]} + ... + max{D[uk, 0], D[uk, 1]}
-
-    Output: max{D[r, 0], D[r, 1]},  r - root of the tree   [slide 50]
-
-                         u
-                  .------+------.
-                 u1     u2  ... uk
-
-        u COMES:      every child must stay home         -> add D[child, 0]
-        u STAYS HOME: each child is free; take its better -> add max of both
-                      option, independently per child
-
-Why the children are independent [slide 51]: two different departments share
-no boss-employee pair. So once u's choice is fixed, each child's subtree can be
-solved alone and the results added up.
-
-The order: a vertex needs its children first. So compute "from bottom to top"
-[slide 43] -- a POST-ORDER traversal.
-
-The slide's tree, filled in [slides 44-50], written "h, D[v,0], D[v,1]":
-
-                          v1: 10, 33, 43
-                    /                       \
-           v2: 7, 13, 7                 v5: 2, 20, 19
-           /          \                  /           \
-    v3: 1, 0, 1   v4: 12, 0, 12   v6: 2, 17, 2    v8: 3, 0, 3
-                                       |
-                                  v7: 17, 0, 17
-
-    answer max{33, 43} = 43: Alice, Ivan, Kate, Bob, Jesper.
-
-
-RUNNING TIME [slide 52]
------------------------
-    n nodes, at most n - 1 children each: O(n) * O(n) = O(n^2).
-    "This is inaccurate upper bound."
-    Each node costs time proportional to its number of children. Summed over
-    all nodes that is sum deg(vi) = O(|E|), and a tree has |E| = n - 1.
-    So the running time is O(n).
-
-
-TYPO IN THE SLIDES
-------------------
-    - Slide 45 writes "D[u, 1] = h(v) + ...". The vertex is u, so h(u).
-
-
-THE BOOK VS THE SLIDES
-----------------------
-    - Erickson's vertices have no weight: he maximises the NUMBER of guests,
-      so his "1 +" is the slides' "h(u) +". Section 4 uses weights.
-    - Erickson calls the two states MISyes(v) and MISno(v). They are the
-      slides' D[v, 1] and D[v, 0].
-    - Erickson first gives a ONE-state recurrence that looks at children and
-      GRANDCHILDREN:
-          MIS(v) = max{ sum of MIS(w) over children w,
-                        h(v) + sum of MIS(x) over grandchildren x }
-      Section 4 implements it too, and the tests check it agrees.
-    - Erickson stores the values inside the tree nodes. The slides use a table
-      D. Here D is a dict keyed by (vertex, 0 or 1).
-    - The slides assume one root r. "At most one boss" also allows SEVERAL
-      bosses-of-nobody, i.e. a forest. This file handles a forest by adding
-      up the answers of all the roots.
-
-
-WHAT IS IN THIS FILE
---------------------
+What is in this file:
     1. brute_force_party        every set of guests, O(n * 2^n)
     2. best_party_memo          the recurrence, recursive with a memo table
     3. best_party_postorder     the same, iterative post-order, no recursion
@@ -194,19 +72,7 @@ def brute_force_party(happiness, bosses):
 # =====================================================================
 # 2. THE RECURRENCE, RECURSIVE WITH A MEMO TABLE [slides 43-45]
 # =====================================================================
-# happiness: h(v) for each employee
-# bosses: the boss (parent) of each employee, None for a root
-# table: D; table[(vertex, 1)] = best party in T(vertex) with vertex coming,
-#        table[(vertex, 0)] = best party in T(vertex) without vertex
-# vertex: the head of the department being solved
-#
-# The recursion visits children before it finishes the parent, so this IS the
-# bottom-to-top order, done by the call stack. The memo means each vertex is
-# solved once. A tree has no shared subtrees, so the memo never actually hits
-# here -- it is kept because it is the lecture's table D, and section 5 reads
-# it to restore the guests.
-#
-# O(n) time. Recursion depth = height of the tree (see section 7).
+# Notes: [[Tree DP — Code Notes#2. The recurrence, recursive with a memo table]] (variables, order, depth)
 
 def best_party_memo(happiness, bosses):
     children = children_lists(bosses)
@@ -234,16 +100,7 @@ def best_party_memo(happiness, bosses):
 # =====================================================================
 # 3. THE SAME, ITERATIVE POST-ORDER -- no recursion
 # =====================================================================
-# order: every vertex, listed so that each one comes after all its children
-# stack: vertices still to be listed
-#
-# Build the order with an explicit stack: pop a vertex, write it down, push
-# its children. That lists every parent BEFORE its children (a pre-order).
-# Reversed, every child comes before its parent -- which is all the
-# recurrence needs.
-#
-# Then one plain loop over that order fills D, same formulas as section 2.
-# O(n) time, O(n) space, and no recursion depth limit.
+# Notes: [[Tree DP — Code Notes#3. The same, iterative post-order — no recursion]] (variables, how the order is built)
 
 def best_party_postorder(happiness, bosses):
     children = children_lists(bosses)
@@ -272,14 +129,7 @@ def best_party_postorder(happiness, bosses):
 # =====================================================================
 # 4. ERICKSON'S ONE-STATE VERSION -- children and grandchildren
 # =====================================================================
-# best: best[vertex] = MIS(vertex), the best party in T(vertex), whoever comes
-#
-#   best[v] = max( sum of best[w] over children w,            v stays home
-#                  h(v) + sum of best[x] over grandchildren x ) v comes, so
-#                                                               children stay home
-#
-# Same post-order as section 3. Each vertex adds to its parent once and to its
-# grandparent once, so it is still O(n) (Erickson's argument).
+# Notes: [[Tree DP — Code Notes#4. Erickson's one-state version — children and grandchildren]] (the recurrence)
 
 def best_party_grandchildren(happiness, bosses):
     children = children_lists(bosses)
@@ -305,17 +155,7 @@ def best_party_grandchildren(happiness, bosses):
 # =====================================================================
 # 5. RESTORE THE GUESTS -- walking DOWN from the root
 # =====================================================================
-# The table says how good the best party is. To find who comes, start at the
-# root and go down, the opposite way to how the table was filled:
-#
-#   a vertex whose boss COMES         -> must stay home (state 0)
-#   a vertex whose boss STAYS HOME    -> free: take the better of D[v,1], D[v,0]
-#
-# pending: (vertex, may_come) pairs still to decide; may_come is False when
-#          the boss is coming
-# guests: the answer
-#
-# Ties go to "comes". O(n).
+# Notes: [[Tree DP — Code Notes#5. Restore the guests — walking down from the root]] (walk-down rule, variables)
 
 def restore_guests(bosses, table):
     children = children_lists(bosses)
