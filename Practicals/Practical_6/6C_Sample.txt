@@ -1,0 +1,9 @@
+3
+"Tufted Puffin" 30 50
+"Arctic Fox" 40 60
+"Great Skua" 35 100
+4
+60 1
+60 2
+60 3
+42 3
